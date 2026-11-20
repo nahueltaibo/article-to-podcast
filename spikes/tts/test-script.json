@@ -1,0 +1,20 @@
+{
+  "source": "https://www.anthropic.com/research/harness-design-long-running-apps",
+  "note": "Hand-written stand-in for narration output. Keeps some raw tokens ($124.70, Opus 4.5, GANs, MCP, FastAPI) on purpose to test TTS normalization.",
+  "segments": [
+    { "id": "s1", "kind": "title", "text": "Harness design for long-running application development. Written by Prithvi Rajasekaran, from Anthropic's Labs team. Published February 5, 2026." },
+    { "id": "s2", "kind": "paragraph", "text": "Over the past several months I've been working on two interconnected problems: getting Claude to produce high-quality frontend designs, and getting it to build complete applications without human intervention. Taking inspiration from Generative Adversarial Networks, or GANs, I designed a multi-agent structure with a generator and an evaluator agent." },
+    { "id": "s3", "kind": "heading", "text": "Frontend design: making subjective quality gradable." },
+    { "id": "s4", "kind": "list", "text": "I wrote four grading criteria. First, design quality: does the design feel like a coherent whole rather than a collection of parts? Second, originality: is there evidence of custom decisions, or is this template layouts and AI-generated patterns? Third, craft: typography hierarchy, spacing consistency, color harmony, and contrast ratios. And fourth, functionality: can users understand what the interface does, and complete tasks without guessing?" },
+    { "id": "s5", "kind": "paragraph", "text": "I built the loop on the Claude Agent SDK. I gave the evaluator the Playwright MCP, which let it interact with the live page directly before scoring each criterion. I ran 5 to 15 iterations per generation, and a full run could stretch up to four hours." },
+    { "id": "s6", "kind": "heading", "text": "Running the harness." },
+    { "id": "s7", "kind": "quote", "text": "I wrote the following prompt to generate a retro video game maker. Quote: Create a 2D retro game maker with features including a level editor, sprite editor, entity behaviors, and a playable test mode. End quote." },
+    { "id": "s8", "kind": "table-summary", "text": "Here's how the two runs compared. The solo agent ran for 20 minutes and cost $9. The full harness ran for 6 hours and cost $200. The harness was over 20x more expensive, but the difference in output quality was immediately apparent." },
+    { "id": "s9", "kind": "media", "media": "m1", "text": "There's a screenshot on screen. It shows the sprite editor built by the full harness, with a cleaner tool palette, a better color picker, and usable zoom controls." },
+    { "id": "s10", "kind": "code-summary", "text": "The evaluator's bug reports were specific. In one, a reorder route was defined after the frame ID routes, so FastAPI tried to parse the word reorder as an integer, and returned a 422 error." },
+    { "id": "s11", "kind": "table-summary", "text": "For the second version, built on Opus 4.6 instead of Opus 4.5, I asked for a digital audio workstation in the browser. The planner took 4.7 minutes and cost 46 cents. The first build round took 2 hours and 7 minutes, at $71.08. In total, the run took 3 hours and 50 minutes, and cost $124.70." },
+    { "id": "s12", "kind": "quote", "text": "The QA agent still caught real gaps. In its first-round feedback, it noted: This is a strong app with excellent design fidelity, solid AI agent, and good backend. The main failure point is feature completeness. Clips can't be dragged on the timeline, there are no instrument panels, like synth knobs or drum pads, and no visual effect editors, like EQ curves or compressor meters." },
+    { "id": "s13", "kind": "paragraph", "text": "Claude can't actually hear, which made the QA feedback loop less effective with respect to musical taste. You might say it's not pitch-perfect yet. But it's getting there." },
+    { "id": "s14", "kind": "outro", "text": "That was Harness design for long-running application development, from Anthropic." }
+  ]
+}

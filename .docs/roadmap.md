@@ -16,7 +16,7 @@ Pick the engine and voice. The plan is in [spikes/tts.md](spikes/tts.md).
 
 `/article-to-podcast <url>` in Claude Code produces an episode folder and an updated `podcast.xml`.
 
-- Extract to `article.json`, with an extractor tested on 3 Anthropic research posts.
+- Extract to `article.json`. The test articles are [harness-design-long-running-apps](https://www.anthropic.com/research/harness-design-long-running-apps) for images, tables, code, quotes, and video, and [formal-verification](https://www.anthropic.com/research/formal-verification) for a GIF, looping videos, and footnotes.
 - Narration skill and `script.json` schema.
 - Render with the spike's engine, chime, pauses, and loudness normalization.
 - Package with ID3 chapters, `chapters.json`, `presentation.json`, `podcast.xml`.

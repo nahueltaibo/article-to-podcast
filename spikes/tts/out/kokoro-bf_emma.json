@@ -1,0 +1,79 @@
+{
+ "engine": "kokoro",
+ "voice": "bf_emma",
+ "audio_s": 193.4,
+ "synth_s": 3.1,
+ "rtf": 0.016,
+ "segments": [
+  {
+   "id": "s1",
+   "audio_s": 10.15,
+   "synth_s": 1.08
+  },
+  {
+   "id": "s2",
+   "audio_s": 21.02,
+   "synth_s": 0.22
+  },
+  {
+   "id": "s3",
+   "audio_s": 4.25,
+   "synth_s": 0.09
+  },
+  {
+   "id": "s4",
+   "audio_s": 26.38,
+   "synth_s": 0.23
+  },
+  {
+   "id": "s5",
+   "audio_s": 16.48,
+   "synth_s": 0.2
+  },
+  {
+   "id": "s6",
+   "audio_s": 1.95,
+   "synth_s": 0.1
+  },
+  {
+   "id": "s7",
+   "audio_s": 13.7,
+   "synth_s": 0.14
+  },
+  {
+   "id": "s8",
+   "audio_s": 15.93,
+   "synth_s": 0.15
+  },
+  {
+   "id": "s9",
+   "audio_s": 9.38,
+   "synth_s": 0.12
+  },
+  {
+   "id": "s10",
+   "audio_s": 13.38,
+   "synth_s": 0.12
+  },
+  {
+   "id": "s11",
+   "audio_s": 23.02,
+   "synth_s": 0.23
+  },
+  {
+   "id": "s12",
+   "audio_s": 22.55,
+   "synth_s": 0.21
+  },
+  {
+   "id": "s13",
+   "audio_s": 10.0,
+   "synth_s": 0.12
+  },
+  {
+   "id": "s14",
+   "audio_s": 5.17,
+   "synth_s": 0.07
+  }
+ ]
+}

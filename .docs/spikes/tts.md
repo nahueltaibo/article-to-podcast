@@ -4,12 +4,12 @@ Find a voice you'd happily listen to for 20 minutes a day. If a local model is g
 
 ## Test Text
 
-One Anthropic research post, about 3 minutes of narration. It must include:
+[spikes/tts/test-script.json](../../spikes/tts/test-script.json) holds 14 segments, about 3 minutes, written by hand from [Harness design for long-running application development](https://www.anthropic.com/research/harness-design-long-running-apps). It stands in for the narration step's output and covers:
 
-- Technical terms and names: Claude, RLHF, Anthropic, model names
-- Numbers, percentages, years, and ranges
-- A quote and a list
-- An image pointer line: "There's a chart on screen."
+- Names and acronyms: Claude, Opus 4.5, GANs, MCP, FastAPI, SDK, QA
+- Money, durations, and ranges: $124.70, 4.7 minutes, 5 to 15, 20x
+- A list, two quotes, two table summaries, and a code summary
+- An image pointer line
 
 The same text, split into the same paragraphs, goes through every engine. Each paragraph is rendered **separately**, then the clips are joined, the same way the real pipeline works. That surfaces voice drift between clips.
 
@@ -20,6 +20,9 @@ This space changes fast. Before starting, check for newer models on Hugging Face
 **Local**, on the RTX 5080 Laptop with 16 GB of VRAM:
 
 - Kokoro-82M: small and fast, the baseline to beat
+- Fish Audio: the top open-weights model on the Artificial Analysis leaderboard in November 2026. Its license allows personal use.
+- Qwen3-TTS
+- MOSS-TTS: built for long-form narration
 - Chatterbox
 - Orpheus
 - Higgs Audio v2

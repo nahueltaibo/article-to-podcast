@@ -21,6 +21,13 @@ Claude only does the step that needs judgment: writing the narration. Every othe
 - Writes ordered blocks (`heading`, `paragraph`, `image`, `caption`, `quote`, `code`, `table`, `list`, `video`) to `article.json`, with title, authors, and publish date.
 - Downloads images and pairs them with their captions and alt text.
 
+Things to handle on Anthropic pages:
+
+- Tables are grids of `<div>` cells, with no `<table>` element. Across all 220 research posts, not one uses `<table>`.
+- Image `alt` text is usually empty, so captions are the only description.
+- Boilerplate to drop: the table of contents (it shows up 3 times), the BibTeX citation `<pre>`, topic tags, and related-post links.
+- Videos come as `<video>` elements, either demos with controls or looping animations. Some posts also use GIFs and `<iframe>` embeds.
+
 ### Narrate
 
 A repo skill tells Claude how to turn `article.json` into `script.json`:

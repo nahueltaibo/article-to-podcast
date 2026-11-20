@@ -1,0 +1,79 @@
+{
+ "engine": "kokoro",
+ "voice": "af_heart",
+ "audio_s": 204.1,
+ "synth_s": 4.1,
+ "rtf": 0.02,
+ "segments": [
+  {
+   "id": "s1",
+   "audio_s": 11.03,
+   "synth_s": 2.13
+  },
+  {
+   "id": "s2",
+   "audio_s": 21.93,
+   "synth_s": 0.23
+  },
+  {
+   "id": "s3",
+   "audio_s": 3.98,
+   "synth_s": 0.07
+  },
+  {
+   "id": "s4",
+   "audio_s": 27.55,
+   "synth_s": 0.24
+  },
+  {
+   "id": "s5",
+   "audio_s": 17.43,
+   "synth_s": 0.18
+  },
+  {
+   "id": "s6",
+   "audio_s": 1.73,
+   "synth_s": 0.06
+  },
+  {
+   "id": "s7",
+   "audio_s": 14.5,
+   "synth_s": 0.13
+  },
+  {
+   "id": "s8",
+   "audio_s": 17.52,
+   "synth_s": 0.16
+  },
+  {
+   "id": "s9",
+   "audio_s": 10.2,
+   "synth_s": 0.1
+  },
+  {
+   "id": "s10",
+   "audio_s": 14.0,
+   "synth_s": 0.14
+  },
+  {
+   "id": "s11",
+   "audio_s": 24.68,
+   "synth_s": 0.22
+  },
+  {
+   "id": "s12",
+   "audio_s": 24.4,
+   "synth_s": 0.23
+  },
+  {
+   "id": "s13",
+   "audio_s": 10.12,
+   "synth_s": 0.11
+  },
+  {
+   "id": "s14",
+   "audio_s": 5.03,
+   "synth_s": 0.11
+  }
+ ]
+}
