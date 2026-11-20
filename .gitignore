@@ -33,3 +33,9 @@ spikes/tts/*/.venv/
 spikes/tts/**/*.log
 spikes/tts/**/*.onnx
 spikes/tts/**/*.onnx.json
+
+# Android
+android/keystore.properties
+android/.gradle/
+android/**/build/
+android/local.properties

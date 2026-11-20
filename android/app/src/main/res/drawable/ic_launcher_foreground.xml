@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- A page with a sound wave: articles turned into audio. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#F4F1EA"
+        android:pathData="M38,30h26l8,8v40a2,2 0,0 1,-2 2h-32a2,2 0,0 1,-2 -2v-46a2,2 0,0 1,2 -2z" />
+    <path
+        android:fillColor="#E0B44C"
+        android:pathData="M43,56h3v8h-3zM49,50h3v20h-3zM55,46h3v28h-3zM61,52h3v16h-3zM67,57h3v6h-3z" />
+</vector>
