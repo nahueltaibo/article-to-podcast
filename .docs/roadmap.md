@@ -1,71 +1,40 @@
 # Roadmap
 
-Each milestone ends with something you can listen to. You'll have a working podcast in AntennaPod before the Android app is written.
+The first goal is one article URL turned into one episode that plays in AntennaPod with images in sync. Sources, scheduling, hosting, and our own player wait until that works.
 
 ```mermaid
 flowchart TD
-    M0[M0 Spikes<br/>TTS voices · cloud routine] --> M1[M1 Discover + extract]
-    M1 --> M2[M2 Narrate + render]
-    M2 --> M3[M3 Scheduled routine + feed repo<br/>listen in AntennaPod]
-    M0 -->|reference presentation| M4[M4 Android player]
-    M3 --> M4
-    M4 --> M5[M5 Polish]
+    M0[M0 TTS spike] --> M1[M1 Article to podcast]
+    M1 --> L[Later<br/>sources · routine · hosting · own player]
 ```
 
-## Milestones
+## M0 — TTS Spike
 
-### M0 — Spikes
+Pick the engine and voice. The plan is in [spikes/tts.md](spikes/tts.md).
 
-**TTS voices.** Narrate one real Anthropic research post with each option, then compare quality, speed, and cost.
+## M1 — Article to Podcast
 
-- Local models: Kokoro, Piper, and any newer open model worth a try.
-- Paid APIs: ElevenLabs, OpenAI, Google Cloud TTS.
-- Decision rule: use the local model if it sounds good enough. Otherwise use the best paid one.
-- Also measure how long the local model takes on the routine's CPU.
+`/article-to-podcast <url>` in Claude Code produces an episode folder and an updated `podcast.xml`.
 
-**Cloud routine.** Check what the routine can actually do:
-
-- Install Python dependencies and download a TTS model on each run, within the run's time limit.
-- Push to a second private repo (`audio-presenter-feed`).
-- Read a secret for a paid TTS key.
-- Measure how much subscription usage one article costs.
-
-**Reference presentation.** Turn one Anthropic post into a full presentation on the PC, recorded with the TTS engine the spike picked. This is the first playable version, and it uses the real voice. The app is built against it, so M4 can start before M3 is done. If the voice changes later, only the audio gets rendered again.
-
-### M1 — Discover and extract
-
-- Sitemap, RSS, and listing adapters. `sources.yaml` with Anthropic research.
-- Extraction to `article.json` with images downloaded.
-- Run it locally and inspect the output.
-
-### M2 — Narrate and render
-
+- Extract to `article.json`, with an extractor tested on 3 Anthropic research posts.
 - Narration skill and `script.json` schema.
-- The TTS backend picked in M0.
-- `presentation.json`, `chapters.json`, and validation.
-- Run it locally from Claude Code, end to end, for one article.
+- Render with the spike's engine, chime, pauses, and loudness normalization.
+- Package with ID3 chapters, `chapters.json`, `presentation.json`, `podcast.xml`.
+- Listen to it in AntennaPod over the LAN.
 
-### M3 — Scheduled routine
+**Done when** a real Anthropic post plays in AntennaPod, the images change at the right moments, and nothing has to be fixed by hand.
 
-- Create the feed repo and the routine.
-- `index.json`, `podcast.xml`, seen-URL state, retries, per-run cap.
-- Subscribe in AntennaPod to check synced images in a real player.
+## Later
 
-### M4 — Android player
+Not planned in detail yet:
 
-- Sync `index.json`, queue, offline downloads.
-- Media3 playback with images in sync, chime and vibration cue, lock screen artwork.
-
-### M5 — Polish
-
-- Pause-on-media mode, transcript view, narration styles, per-source voices.
-- Edit sources from the app.
-- Android Auto.
-- Feed repo retention cleanup.
+- Sources and discovery, with the Anthropic sitemap first.
+- A Claude Code cloud routine.
+- Private hosting reachable from anywhere, so Pocket Casts also works.
+- Our own player or an AntennaPod patch, if vibration or pause-on-media are missed.
 
 ## Open Questions
 
-- **Can a routine work with two repos?** If not, the feed lives on an orphan `feed` branch of this repo. The M0 routine spike answers this.
-- **Is a local model fast enough on the routine's CPU?** If not, that favors the paid API even if the local voice sounds fine.
-- **Can AntennaPod read a private GitHub repo?** It doesn't support token auth. A private GitHub Pages site or a hard-to-guess raw URL may do. That only affects M3. Our app uses a token.
-- **How often should the routine run?** Probably every few hours. It depends on the usage cost measured in M0.
+- **Does AntennaPod show ID3 chapter images from MP3s in a local folder,** or only from subscribed feeds? Test both ways in M1.
+- **Is the chime enough of a cue?** Decide after a week of real listening.
+- **How long should the pauses be** between segments, and before and after headings? Tune by ear in M1.

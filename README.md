@@ -1,6 +1,6 @@
 # Audio Presenter
 
-Turns articles from sources you choose into a narrated podcast. A Claude Code cloud routine generates the episodes. An Android app plays them with each article's images shown in sync with the audio.
+Turns an article URL into a podcast episode: a recorded narration with the article's images as chapter art, in sync with the audio. You listen in an existing podcast app such as AntennaPod.
 
 Planning docs live in [.docs](.docs):
 
@@ -8,3 +8,4 @@ Planning docs live in [.docs](.docs):
 - [Architecture](.docs/architecture.md)
 - [Presentation format](.docs/presentation-format.md)
 - [Roadmap](.docs/roadmap.md)
+- [TTS spike](.docs/spikes/tts.md)

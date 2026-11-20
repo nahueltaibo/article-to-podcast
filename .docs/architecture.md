@@ -1,127 +1,77 @@
 # Architecture
 
-There are three parts:
-
-- **Generator.** A scheduled Claude Code cloud routine that runs on your Anthropic subscription. It turns new articles into presentations.
-- **Feed repo.** A private GitHub repo that holds the presentations. The phone reads it like a podcast feed.
-- **App.** An Android player. It doesn't generate anything. It downloads presentations and plays them.
+The core is a pipeline that turns one article URL into one podcast episode. It runs on the PC, driven by Claude Code on your Anthropic subscription. Sources, scheduling, and hosting come later, as layers around it.
 
 ```mermaid
 flowchart TD
-    subgraph R[Cloud routine · Claude Code]
-        D[Discover<br/>script] --> E[Extract<br/>script]
-        E --> N[Narrate<br/>Claude itself]
-        N --> T[Render audio<br/>TTS script]
-        T --> V[Validate + publish<br/>script]
-    end
-    F[(Feed repo<br/>sources.yaml · index.json · episodes/)]
-    F -->|sources + seen URLs| D
-    V -->|git push| F
-    F -->|HTTPS pull| A[Android app]
-    F -.->|podcast.xml| P[Any podcast app]
+    U[Article URL] --> E[Extract<br/>script → article.json + images]
+    E --> N[Narrate<br/>Claude → script.json]
+    N --> R[Render<br/>TTS per segment + chime → audio.mp3]
+    R --> P[Package<br/>ID3 chapters, chapters.json, podcast.xml]
+    P --> A[AntennaPod]
 ```
 
-## Repos
+Claude only does the step that needs judgment: writing the narration. Every other step is a deterministic Python script. Claude runs them from one command, `/article-to-podcast <url>`, so runs are repeatable and easy to debug.
 
-| Repo | Holds |
-| --- | --- |
-| `audio-presenter` (this one) | Docs, generator scripts and skill, Android app |
-| `audio-presenter-feed` (private) | `sources.yaml`, the list of seen URLs per source, `index.json`, `podcast.xml`, one folder per episode |
-
-Keeping the binary audio out of this repo keeps its history small. Audio is compressed to mono Opus or AAC at about 32 kbps, roughly 0.25 MB per minute. If the feed repo grows too large, a cleanup step drops episodes older than a retention window.
-
-## Generator
-
-Claude only does the part that needs judgment: writing the narration. Everything else is a deterministic script that Claude runs, so runs are repeatable and cheap on subscription usage.
-
-### Discover
-
-- Reads `sources.yaml` and the seen-URL state from the feed repo. Returns new article URLs.
-- Uses one adapter per source type:
-
-| Adapter | Detects new posts by | Used when |
-| --- | --- | --- |
-| RSS/Atom | Feed items not seen before | The site has a feed |
-| Sitemap | URLs matching a path prefix not seen before | No feed, but a sitemap exists |
-| Listing | Links matching a CSS selector on a listing page | Neither of the above |
-
-- On a source's first run, it only takes the newest N articles (default 5). Otherwise the queue would fill with the whole archive.
-- Takes at most M articles per run, to cap subscription usage.
-
-**Anthropic research.** The site has no feed: `/rss.xml`, `/feed`, and `/feed.xml` all return 404. The generator uses the sitemap adapter on `https://www.anthropic.com/sitemap.xml` with prefix `/research/`. The `lastmod` dates can't be trusted for ordering because bulk edits give many entries the same timestamp. So the adapter compares the set of URLs, and the publish date comes from the article page itself.
+## Steps
 
 ### Extract
 
-- Keeps the main content with a Readability-style extractor. A source can override this with CSS selectors.
-- Writes ordered blocks (`heading`, `paragraph`, `image`, `caption`, `quote`, `code`, `table`, `list`, `video`) to `article.json`.
-- Downloads images and converts them to WebP, with captions and alt text attached.
+- Fetches the page and keeps the main content. The extractor library gets picked by testing on Anthropic posts: trafilatura or readability-lxml.
+- Writes ordered blocks (`heading`, `paragraph`, `image`, `caption`, `quote`, `code`, `table`, `list`, `video`) to `article.json`, with title, authors, and publish date.
+- Downloads images and pairs them with their captions and alt text.
 
 ### Narrate
 
-A repo skill tells Claude how to turn `article.json` into narration segments:
+A repo skill tells Claude how to turn `article.json` into `script.json`:
 
+- One segment per paragraph or equivalent block.
 - Stay faithful to the original. Only rewrite what doesn't work when spoken: URLs, footnote markers, code, tables.
-- Open the downloaded images and describe what they actually show.
-- Start each media segment with a short spoken pointer, for example "There's a chart on screen."
+- Open each image and describe what it actually shows.
+- Start each image segment with a short spoken pointer, for example "There's a chart on screen."
 
-Claude writes `script.json`, and a JSON schema check rejects malformed output before audio is rendered.
+A JSON schema check rejects malformed output before any audio is rendered.
 
-### Render audio
+### Render
 
-- Renders each segment to speech, then joins the segments into one audio file. Segment start times come from the measured durations.
-- Uses one TTS interface with two backends: a local open model or a paid API. The [TTS spike](roadmap.md#m0--spikes) picks one.
-- A paid API needs its key stored as a routine secret.
-- **Audio is replaceable.** The render step reads only `script.json`, so it can run again with another voice or engine without calling Claude. It overwrites the audio file and the segment timings. The script and the images stay the same.
+- Renders each segment to its own audio clip, with the TTS engine picked in the [TTS spike](spikes/tts.md).
+- Mixes a short chime before every segment that brings a new image.
+- Joins the clips with a fixed pause between them, then encodes one MP3. Segment start times come from the measured clip durations.
+- Reads only `script.json`, so changing the voice means rendering again without calling Claude.
 
-### Validate and publish
+### Package
 
-- Writes `presentation.json` and checks it against the schema.
-- Updates `index.json`, `podcast.xml`, and the seen-URL state.
-- Commits and pushes to the feed repo. One commit per run.
+- Writes `presentation.json` with the full timeline.
+- Embeds ID3 chapters into the MP3 (`CHAP` + `CTOC` frames, with an `APIC` image per chapter) using mutagen.
+- Writes `chapters.json` (Podcasting 2.0 format) and a `podcast.xml` feed that lists every episode in the output folder.
 
-### Failures
+See [presentation-format.md](presentation-format.md) for the files and the chapter rules.
 
-- A failed article is logged in the run state and retried on the next run, up to 3 attempts.
-- A failure in one article never blocks the others.
+### Deliver
 
-## Podcast Export
+- AntennaPod subscribes to `podcast.xml`, served over the LAN with `python -m http.server`. Or it can read the MP3s from a local folder on the phone.
+- Pocket Casts can't use either option. It refreshes feeds through its own servers, so it needs public hosting. That waits for the hosting layer.
 
-Each run also writes `podcast.xml`, a standard podcast RSS feed with [Podcasting 2.0 chapters](https://github.com/Podcastindex-org/podcast-namespace/blob/main/chapters/jsonChapters.md). Each chapter can carry an image. That gives synced images in an existing Android podcast app such as AntennaPod before our app exists.
-
-Our app still adds the chime and vibration cue, pause-on-media, and the transcript.
-
-## App
-
-- Polls `index.json` with an ETag on a WorkManager schedule. Downloads new episodes in full for offline playback.
-- Reads the private repo with a fine-grained GitHub token that has read-only access to contents, stored in Keystore-backed encrypted storage.
-- Media3 `ExoPlayer` inside a `MediaSessionService` handles background playback, the lock screen, Bluetooth, and Android Auto later.
-- A position listener maps playback time to the current segment. When a segment brings new media, the app shows the image, sets it as the session artwork, then chimes and vibrates.
-
-```mermaid
-sequenceDiagram
-    participant P as ExoPlayer
-    participant S as Session service
-    participant UI as Screen / lock screen
-    P->>S: position crosses segment 7 start
-    S->>S: segment 7 has media?
-    S->>UI: show image + update artwork
-    S->>UI: chime + vibration
-    Note over P,UI: "pause on media" mode pauses here until tap or timeout
-```
+## Tooling
 
 | Concern | Choice |
 | --- | --- |
-| Language / UI | Kotlin, Jetpack Compose |
-| Playback | Media3 (ExoPlayer, MediaSession) |
-| Sync | WorkManager, OkHttp |
-| Storage | Room for queue and playback state. Files in app storage. |
-| Images | Coil |
-| DI | Hilt |
+| Language | Python 3.13 with uv |
+| Audio | ffmpeg (joining, loudness normalization, MP3 encoding) |
+| ID3 chapters | mutagen |
+| Narration | Claude Code skill + slash command |
+| TTS | Picked in the spike. The local GPU is an RTX 5080 Laptop with 16 GB of VRAM. |
+
+## Later Layers
+
+- **Sources.** RSS/Atom, sitemap, and listing-page adapters that find new article URLs. Anthropic research has no feed: `/rss.xml`, `/feed`, and `/feed.xml` all return 404. So it uses the sitemap at `https://www.anthropic.com/sitemap.xml`, filtered to `/research/`, and compares the set of URLs between checks. The `lastmod` dates can't be used because bulk edits give many entries the same timestamp.
+- **Scheduled routine.** A Claude Code cloud routine that runs the same pipeline on new URLs. It needs a TTS that runs in the cloud, which the spike should keep in mind.
+- **Hosting.** A private feed you can reach from anywhere.
+- **Own player.** Adds vibration on images and pause-on-media. Built on the same `presentation.json`.
 
 ## Key Decisions
 
-- **Generation runs in the cloud, on your subscription.** The routine runs with your PC off and needs no Anthropic API key.
-- **TTS runs on the generator, never on the phone.** Phone voices aren't good enough.
-- **Scripts do the mechanical work, Claude does the writing.** Runs are cheaper, repeatable, and easier to debug.
-- **GitHub is the delivery channel.** No server to host. Git history doubles as an audit log of every run.
-- **One audio file plus a timeline.** The format works in a plain podcast app, and our app layers the sync on top.
+- **Existing podcast apps first.** They already handle the queue, background playback, and offline listening, and they show chapter images.
+- **MP3 with ID3 chapters.** Pocket Casts on Android reads MP3 chapters but not M4A chapters. AntennaPod reads both.
+- **Chime in the audio.** It works in every player, so the "look now" cue doesn't need our own app.
+- **One segment per paragraph.** Images switch at paragraph boundaries, and a failed segment re-renders on its own.

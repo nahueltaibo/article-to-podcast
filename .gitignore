@@ -20,3 +20,8 @@ secrets.properties
 .DS_Store
 Thumbs.db
 .playwright-mcp/
+
+# Spike and pipeline output
+spikes/**/*.wav
+spikes/**/*.mp3
+output/
