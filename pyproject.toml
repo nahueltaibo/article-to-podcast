@@ -1,0 +1,44 @@
+[project]
+name = "audio-presenter"
+version = "0.1.0"
+description = "Turns an article URL into a podcast episode with narration and chapter images in sync."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "beautifulsoup4>=4.12",
+  "httpx>=0.27",
+  "jsonschema>=4.23",
+  "mutagen>=1.47",
+  "numpy>=1.26",
+  "pillow>=10.4",
+  "soundfile>=0.12",
+  "kokoro>=0.9.4",
+  "torch>=2.7",
+  # misaki tries to pip-install the spaCy model at runtime; pinning it avoids that.
+  "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+  "pip",
+]
+
+[project.scripts]
+audio-presenter = "audio_presenter.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu128" }
+
+[[tool.uv.index]]
+# RTX 50-series GPUs need CUDA 12.8+ builds of PyTorch.
+name = "pytorch-cu128"
+url = "https://download.pytorch.org/whl/cu128"
+explicit = true

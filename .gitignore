@@ -27,3 +27,9 @@ spikes/**/*.mp3
 output/
 __pycache__/
 spikes/tts/out/
+spikes/tts/*/repo/
+spikes/tts/*/checkpoints/
+spikes/tts/*/.venv/
+spikes/tts/**/*.log
+spikes/tts/**/*.onnx
+spikes/tts/**/*.onnx.json

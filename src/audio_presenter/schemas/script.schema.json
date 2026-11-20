@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Narration script",
+  "type": "object",
+  "required": ["description", "segments"],
+  "additionalProperties": false,
+  "properties": {
+    "description": { "type": "string", "minLength": 20, "description": "One or two sentences for the podcast episode description." },
+    "segments": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "text"],
+        "additionalProperties": false,
+        "properties": {
+          "id": { "type": "string", "pattern": "^s[0-9]+$" },
+          "kind": { "enum": ["title", "heading", "paragraph", "media", "quote", "list", "code-summary", "table-summary", "footnote", "outro"] },
+          "text": { "type": "string", "minLength": 1 },
+          "media": { "type": "string", "pattern": "^m[0-9]+$" },
+          "chapter": { "type": "string", "description": "Chapter title, for heading segments when the spoken text differs from the heading." }
+        }
+      }
+    }
+  }
+}

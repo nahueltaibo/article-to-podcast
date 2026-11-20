@@ -10,17 +10,16 @@ flowchart TD
 
 ## M0 — TTS Spike
 
-Pick the engine and voice. The plan is in [spikes/tts.md](spikes/tts.md).
+**Decided:** Kokoro `af_heart` is the default voice. The other free local models are still being compared. See [spikes/tts.md](spikes/tts.md).
 
 ## M1 — Article to Podcast
 
-`/article-to-podcast <url>` in Claude Code produces an episode folder and an updated `podcast.xml`.
+**Built.** `/article-to-podcast <url>` in Claude Code produces an episode and updates `podcast.xml`. The first episode is [harness-design-long-running-apps](https://www.anthropic.com/research/harness-design-long-running-apps): 34 minutes and 20 chapters.
 
-- Extract to `article.json`. The test articles are [harness-design-long-running-apps](https://www.anthropic.com/research/harness-design-long-running-apps) for images, tables, code, quotes, and video, and [formal-verification](https://www.anthropic.com/research/formal-verification) for a GIF, looping videos, and footnotes.
-- Narration skill and `script.json` schema.
-- Render with the spike's engine, chime, pauses, and loudness normalization.
-- Package with ID3 chapters, `chapters.json`, `presentation.json`, `podcast.xml`.
-- Listen to it in AntennaPod over the LAN.
+Left to finish:
+
+- Listen to it in AntennaPod and confirm the images change at the right moments.
+- Run the second test article, [formal-verification](https://www.anthropic.com/research/formal-verification), for its GIF, looping videos, and footnotes.
 
 **Done when** a real Anthropic post plays in AntennaPod, the images change at the right moments, and nothing has to be fixed by hand.
 
@@ -38,3 +37,4 @@ Not planned in detail yet:
 - **Does AntennaPod show ID3 chapter images from MP3s in a local folder,** or only from subscribed feeds? Test both ways in M1.
 - **Is the chime enough of a cue?** Decide after a week of real listening.
 - **How long should the pauses be** between segments, and before and after headings? Tune by ear in M1.
+- **Does AntennaPod show chapters in file order or by start time?** mutagen writes the `CHAP` frames out of order, but the `CTOC` list and start times are right.
