@@ -1,114 +1,126 @@
 # Architecture
 
-Everything runs on the phone. It calls cloud APIs for the LLM and the TTS. There's no backend to host, and the API keys are yours.
+There are three parts:
 
-The generation pipeline sits behind its own module with no Android UI dependencies. If background generation on the phone becomes a problem (battery, Doze, sync across devices), it can move to a server later.
-
-## Pipeline
+- **Generator.** A scheduled Claude Code cloud routine that runs on your Anthropic subscription. It turns new articles into presentations.
+- **Feed repo.** A private GitHub repo that holds the presentations. The phone reads it like a podcast feed.
+- **App.** An Android player. It doesn't generate anything. It downloads presentations and plays them.
 
 ```mermaid
 flowchart TD
-    S[Source config] --> D[Discovery<br/>RSS / sitemap / listing]
-    D -->|new URLs| A[Article queue]
-    A --> E[Extraction<br/>HTML → ordered blocks]
-    E --> N[Script builder<br/>LLM: blocks → segments]
-    N --> T[TTS<br/>one audio file per segment]
-    T --> P[Episode<br/>segments + timeline]
-    P --> UI[Player + media view]
+    subgraph R[Cloud routine · Claude Code]
+        D[Discover<br/>script] --> E[Extract<br/>script]
+        E --> N[Narrate<br/>Claude itself]
+        N --> T[Render audio<br/>TTS script]
+        T --> V[Validate + publish<br/>script]
+    end
+    F[(Feed repo<br/>sources.yaml · index.json · episodes/)]
+    F -->|sources + seen URLs| D
+    V -->|git push| F
+    F -->|HTTPS pull| A[Android app]
+    F -.->|podcast.xml| P[Any podcast app]
 ```
 
-Each stage writes its result to the database. A failure retries that stage only, never the whole article.
+## Repos
 
-## Components
+| Repo | Holds |
+| --- | --- |
+| `audio-presenter` (this one) | Docs, generator scripts and skill, Android app |
+| `audio-presenter-feed` (private) | `sources.yaml`, the list of seen URLs per source, `index.json`, `podcast.xml`, one folder per episode |
 
-### Source adapters
+Keeping the binary audio out of this repo keeps its history small. Audio is compressed to mono Opus or AAC at about 32 kbps, roughly 0.25 MB per minute. If the feed repo grows too large, a cleanup step drops episodes older than a retention window.
 
-Each source has a type, a URL, and optional filters. The adapter returns article URLs it hasn't seen before.
+## Generator
+
+Claude only does the part that needs judgment: writing the narration. Everything else is a deterministic script that Claude runs, so runs are repeatable and cheap on subscription usage.
+
+### Discover
+
+- Reads `sources.yaml` and the seen-URL state from the feed repo. Returns new article URLs.
+- Uses one adapter per source type:
 
 | Adapter | Detects new posts by | Used when |
-|---|---|---|
+| --- | --- | --- |
 | RSS/Atom | Feed items not seen before | The site has a feed |
 | Sitemap | URLs matching a path prefix not seen before | No feed, but a sitemap exists |
 | Listing | Links matching a CSS selector on a listing page | Neither of the above |
 
-Auto-detection tries these in order when you add a source.
+- On a source's first run, it only takes the newest N articles (default 5). Otherwise the queue would fill with the whole archive.
+- Takes at most M articles per run, to cap subscription usage.
 
-**Anthropic preset.** It has no feed: `/rss.xml`, `/feed`, and `/feed.xml` all return 404. It uses the sitemap adapter on `https://www.anthropic.com/sitemap.xml` with prefix `/research/`. The `lastmod` dates can't be trusted for ordering because bulk edits give many entries the same timestamp. So the adapter diffs the URL set, and the publish date comes from the article page itself.
+**Anthropic research.** The site has no feed: `/rss.xml`, `/feed`, and `/feed.xml` all return 404. The generator uses the sitemap adapter on `https://www.anthropic.com/sitemap.xml` with prefix `/research/`. The `lastmod` dates can't be trusted for ordering because bulk edits give many entries the same timestamp. So the adapter compares the set of URLs, and the publish date comes from the article page itself.
 
-On the first sync, a source only imports its newest N articles (default 5). Otherwise the queue would fill with the whole archive.
+### Extract
 
-### Extraction
+- Keeps the main content with a Readability-style extractor. A source can override this with CSS selectors.
+- Writes ordered blocks (`heading`, `paragraph`, `image`, `caption`, `quote`, `code`, `table`, `list`, `video`) to `article.json`.
+- Downloads images and converts them to WebP, with captions and alt text attached.
 
-- Fetch the article HTML and keep the main content with a Readability port.
-- Walk the DOM into typed blocks: `heading`, `paragraph`, `image`, `caption`, `quote`, `code`, `table`, `video`, `list`.
-- Pair images with their captions and alt text. Resolve them to absolute URLs and download them.
-- A source can override extraction with CSS selectors when Readability gets it wrong.
+### Narrate
 
-### Script builder
+A repo skill tells Claude how to turn `article.json` into narration segments:
 
-The LLM gets the blocks and returns narration segments as structured JSON. Each segment has spoken text and an optional reference to a media block.
+- Stay faithful to the original. Only rewrite what doesn't work when spoken: URLs, footnote markers, code, tables.
+- Open the downloaded images and describe what they actually show.
+- Start each media segment with a short spoken pointer, for example "There's a chart on screen."
 
-- **Faithful by default.** Paragraphs stay close to the original. Only listening-hostile content gets rewritten: URLs, footnote markers, code, tables.
-- **Image descriptions.** The image goes to the model through vision together with its caption, so the description matches what the image really shows.
-- **Media cue.** A segment that references an image starts with a short spoken pointer, for example "There's a chart on screen."
-- **Long articles** go in chunks by section, so one request never grows too large.
+Claude writes `script.json`, and a JSON schema check rejects malformed output before audio is rendered.
 
-Claude through the Anthropic API is the first provider. The model is configurable, with a cheaper model for plain text and a stronger one for vision.
+### Render audio
 
-### TTS
+- Renders each segment to speech, then joins the segments into one audio file. Segment start times come from the measured durations.
+- Uses one TTS interface with two backends: a local open model or a paid API. The [TTS spike](roadmap.md#m0--spikes) picks one.
+- A paid API needs its key stored as a routine secret.
 
-- Synthesize **one audio file per segment**. Each segment's start time is the sum of the durations before it. That gives the image timeline without needing word-level timestamps.
-- Providers sit behind one interface. Android's built-in `TextToSpeech` works offline as a free fallback, and a cloud voice gives the quality.
-- Retrying one failed segment is cheap.
+### Validate and publish
 
-### Player
+- Writes `presentation.json` and checks it against the schema.
+- Updates `index.json`, `podcast.xml`, and the seen-URL state.
+- Commits and pushes to the feed repo. One commit per run.
 
-- Media3 `ExoPlayer` plays the segment files as a gapless playlist, inside a `MediaSessionService`. That gives you background playback, lock screen, Bluetooth controls, and Android Auto later.
-- On every segment change, the UI shows that segment's image, or keeps the last one visible.
-- When a segment has media, the app plays a chime, vibrates, and sets the image as the session artwork so it shows on the lock screen.
+### Failures
+
+- A failed article is logged in the run state and retried on the next run, up to 3 attempts.
+- A failure in one article never blocks the others.
+
+## Podcast Export
+
+Each run also writes `podcast.xml`, a standard podcast RSS feed with [Podcasting 2.0 chapters](https://github.com/Podcastindex-org/podcast-namespace/blob/main/chapters/jsonChapters.md). Each chapter can carry an image. That gives synced images in an existing Android podcast app such as AntennaPod before our app exists.
+
+Our app still adds the chime and vibration cue, pause-on-media, and the transcript.
+
+## App
+
+- Polls `index.json` with an ETag on a WorkManager schedule. Downloads new episodes in full for offline playback.
+- Reads the private repo with a fine-grained GitHub token that has read-only access to contents, stored in Keystore-backed encrypted storage.
+- Media3 `ExoPlayer` inside a `MediaSessionService` handles background playback, the lock screen, Bluetooth, and Android Auto later.
+- A position listener maps playback time to the current segment. When a segment brings new media, the app shows the image, sets it as the session artwork, then chimes and vibrates.
 
 ```mermaid
 sequenceDiagram
     participant P as ExoPlayer
     participant S as Session service
     participant UI as Screen / lock screen
-    P->>S: segment 7 started
-    S->>S: segment 7 has image?
+    P->>S: position crosses segment 7 start
+    S->>S: segment 7 has media?
     S->>UI: show image + update artwork
     S->>UI: chime + vibration
     Note over P,UI: "pause on media" mode pauses here until tap or timeout
 ```
 
-## Data Model
-
-```mermaid
-erDiagram
-    SOURCE ||--o{ ARTICLE : discovers
-    ARTICLE ||--o{ BLOCK : "extracted into"
-    ARTICLE ||--o| EPISODE : "narrated as"
-    EPISODE ||--o{ SEGMENT : contains
-    SEGMENT }o--o| BLOCK : "shows media of"
-```
-
-- `Article.status` tracks the pipeline: `discovered → extracted → scripted → synthesized → ready`, or `failed` with the stage and the error.
-- `Episode` stores playback position and played state.
-- Audio and images live in app storage. A cleanup job deletes them N days after an episode is played.
-
-## Tech Stack
-
 | Concern | Choice |
-|---|---|
+| --- | --- |
 | Language / UI | Kotlin, Jetpack Compose |
 | Playback | Media3 (ExoPlayer, MediaSession) |
-| Background work | WorkManager: periodic discovery plus a chained job per article |
-| Storage | Room |
-| HTTP / parsing | OkHttp, jsoup, Readability4J |
+| Sync | WorkManager, OkHttp |
+| Storage | Room for queue and playback state. Files in app storage. |
 | Images | Coil |
 | DI | Hilt |
-| Secrets | Android Keystore-backed encrypted storage for API keys |
 
 ## Key Decisions
 
-- **On-device, no backend.** It's a personal app, and a server adds hosting and auth for one user.
-- **Segment-level sync, not word-level.** Images only need to change at paragraph boundaries. This keeps every TTS provider usable.
-- **Generate ahead of time, not while streaming.** Episodes are ready before you press play, so playback works offline and never stalls.
+- **Generation runs in the cloud, on your subscription.** The routine runs with your PC off and needs no Anthropic API key.
+- **TTS runs on the generator, never on the phone.** Phone voices aren't good enough.
+- **Scripts do the mechanical work, Claude does the writing.** Runs are cheaper, repeatable, and easier to debug.
+- **GitHub is the delivery channel.** No server to host. Git history doubles as an audit log of every run.
+- **One audio file plus a timeline.** The format works in a plain podcast app, and our app layers the sync on top.

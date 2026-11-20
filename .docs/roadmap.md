@@ -1,55 +1,68 @@
 # Roadmap
 
-Each milestone ends with something usable on the phone. The core experience, audio with synced images, gets proven with free on-device TTS before any paid AI is involved.
+Each milestone ends with something you can listen to. You'll have a working podcast in AntennaPod before the Android app is written.
 
 ```mermaid
 flowchart TD
-    M1[M1 Sources + discovery] --> M2[M2 Extraction + reader view]
-    M2 --> M3[M3 Synced playback<br/>on-device TTS, no AI]
-    M3 --> M4[M4 AI script + cloud voice]
-    M4 --> M5[M5 Podcast queue + background generation]
-    M5 --> M6[M6 Polish]
+    M0[M0 Spikes<br/>TTS voices · cloud routine] --> M1[M1 Discover + extract]
+    M1 --> M2[M2 Narrate + render]
+    M2 --> M3[M3 Scheduled routine + feed repo<br/>listen in AntennaPod]
+    M3 --> M4[M4 Android player]
+    M4 --> M5[M5 Polish]
 ```
 
 ## Milestones
 
-### M1 — Sources and discovery
+### M0 — Spikes
 
-- RSS, sitemap, and listing adapters, with auto-detection.
-- Anthropic research preset.
-- Source management screen and a list of discovered articles.
+**TTS voices.** Narrate one real Anthropic research post with each option, then compare quality, speed, and cost.
 
-### M2 — Extraction
+- Local models: Kokoro, Piper, and any newer open model worth a try.
+- Paid APIs: ElevenLabs, OpenAI, Google Cloud TTS.
+- Decision rule: use the local model if it sounds good enough. Otherwise use the best paid one.
+- Also measure how long the local model takes on the routine's CPU.
 
-- HTML to ordered blocks, images downloaded.
-- A plain reader view of the blocks to check extraction quality per source.
+**Cloud routine.** Check what the routine can actually do:
 
-### M3 — Synced playback
+- Install Python dependencies and download a TTS model on each run, within the run's time limit.
+- Push to a second private repo (`audio-presenter-feed`).
+- Read a secret for a paid TTS key.
+- Measure how much subscription usage one article costs.
 
-- Read the blocks as-is with Android `TextToSpeech`, one segment per block.
-- Media3 player, background playback, images in sync, chime and vibration cue.
-- This is the milestone that tells us whether the idea works.
+### M1 — Discover and extract
 
-### M4 — AI narration
+- Sitemap, RSS, and listing adapters. `sources.yaml` with Anthropic research.
+- Extraction to `article.json` with images downloaded.
+- Run it locally and inspect the output.
 
-- Claude script builder: faithful adaptation, image descriptions through vision, media cues.
-- Cloud TTS provider, with API keys entered in settings.
+### M2 — Narrate and render
 
-### M5 — Podcast experience
+- Narration skill and `script.json` schema.
+- The TTS backend picked in M0.
+- `presentation.json`, `chapters.json`, and validation.
+- Run it locally from Claude Code, end to end, for one article.
 
-- Queue with auto-advance and played state.
-- WorkManager chain: discover, extract, script, synthesize, notify.
-- Storage cleanup.
+### M3 — Scheduled routine
 
-### M6 — Polish
+- Create the feed repo and the routine.
+- `index.json`, `podcast.xml`, seen-URL state, retries, per-run cap.
+- Subscribe in AntennaPod to check synced images in a real player.
 
-- Pause-on-media mode, narration styles, per-source voices.
+### M4 — Android player
+
+- Sync `index.json`, queue, offline downloads.
+- Media3 playback with images in sync, chime and vibration cue, lock screen artwork.
+
+### M5 — Polish
+
+- Pause-on-media mode, transcript view, narration styles, per-source voices.
+- Edit sources from the app.
 - Android Auto.
-- Transcript view.
+- Feed repo retention cleanup.
 
 ## Open Questions
 
-- **Which cloud TTS?** Voice quality vs cost per article. Compare a few providers on one real Anthropic post before M4.
-- **Default narration style?** Planned as faithful. Confirm after hearing M4 output.
-- **Cost guardrails?** Possibly a monthly cap, or a per-source "auto-generate" toggle so expensive sources only generate on demand.
-- **Will Doze kill background generation?** If WorkManager proves unreliable for long jobs, consider a foreground service, or moving the pipeline to a server.
+- **Can a routine work with two repos?** If not, the feed lives on an orphan `feed` branch of this repo. The M0 routine spike answers this.
+- **Is a local model fast enough on the routine's CPU?** If not, that favors the paid API even if the local voice sounds fine.
+- **Can AntennaPod read a private GitHub repo?** It doesn't support token auth. A private GitHub Pages site or a hard-to-guess raw URL may do. That only affects M3. Our app uses a token.
+- **How often should the routine run?** Probably every few hours. It depends on the usage cost measured in M0.
