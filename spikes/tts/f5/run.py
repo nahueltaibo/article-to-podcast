@@ -1,8 +1,8 @@
 # /// script
 # requires-python = ">=3.11,<3.12"
-# dependencies = ["f5-tts", "soundfile", "numpy", "torch>=2.7", "torchaudio>=2.7"]
+# dependencies = ["f5-tts", "soundfile", "numpy", "torch==2.8.*", "torchaudio==2.8.*"]
 # [tool.uv]
-# override-dependencies = ["torch>=2.7", "torchaudio>=2.7"]
+# override-dependencies = ["torch==2.8.*", "torchaudio==2.8.*"]
 # [tool.uv.sources]
 # torch = { index = "pytorch-cu128" }
 # torchaudio = { index = "pytorch-cu128" }
@@ -11,6 +11,7 @@
 # url = "https://download.pytorch.org/whl/cu128"
 # explicit = true
 # ///
+# torch pinned to 2.8: torchaudio 2.9+ loads audio through torchcodec, which needs shared FFmpeg DLLs.
 import json
 import sys
 from pathlib import Path

@@ -11,11 +11,17 @@
 # url = "https://download.pytorch.org/whl/cu128"
 # explicit = true
 # ///
+import os
 import sys
 from pathlib import Path
 
-import torch
-from transformers import AutoModel, AutoProcessor
+# torchcodec needs shared FFmpeg DLLs; the FFmpeg on PATH is a static build.
+FFMPEG = next((Path(__file__).parent / "ffmpeg-dl").glob("*/bin"))
+os.add_dll_directory(str(FFMPEG))
+os.environ["PATH"] = f"{FFMPEG};{os.environ['PATH']}"
+
+import torch  # noqa: E402
+from transformers import AutoModel, AutoProcessor  # noqa: E402
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from common import ROOT, run  # noqa: E402

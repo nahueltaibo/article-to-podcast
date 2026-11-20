@@ -16,8 +16,6 @@ import sys
 from pathlib import Path
 
 import torch
-from transformers.cache_utils import DynamicCache
-from transformers.modeling_outputs import BaseModelOutputWithPast
 from vibevoice.modular.modeling_vibevoice_streaming_inference import VibeVoiceStreamingForConditionalGenerationInference
 from vibevoice.processor.vibevoice_streaming_processor import VibeVoiceStreamingProcessor
 
@@ -34,8 +32,8 @@ model = VibeVoiceStreamingForConditionalGenerationInference.from_pretrained(
 model.set_ddpm_inference_steps(num_steps=5)
 
 for voice in sys.argv[1:] or ["en-Emma_woman", "en-Carter_man"]:
-    with torch.serialization.safe_globals([BaseModelOutputWithPast, DynamicCache]):
-        prompt = torch.load(VOICES / f"{voice}.pt", map_location="cuda", weights_only=True)
+    # torch 2.11's weights_only unpickler rejects these presets; they ship in Microsoft's own repo.
+    prompt = torch.load(VOICES / f"{voice}.pt", map_location="cuda", weights_only=False)
 
     def synth(text, prompt=prompt):
         text = text.replace("’", "'").replace("“", '"').replace("”", '"')

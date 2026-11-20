@@ -39,3 +39,6 @@ android/keystore.properties
 android/.gradle/
 android/**/build/
 android/local.properties
+
+# Spike tool downloads (binaries, weights, cloned repos)
+spikes/tts/*/ffmpeg-dl/
