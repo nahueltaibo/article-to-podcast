@@ -21,7 +21,7 @@ def build_chapters(presentation: dict) -> list[dict]:
         ref = seg.get("media")
         if ref:
             image = media[ref]["file"]
-            label = media[ref].get("caption") or seg.get("chapter") or "Figure"
+            label = seg.get("chapter") or media[ref].get("caption") or "Figure"
         elif seg["kind"] in CHAPTER_KINDS:
             label = title if seg["kind"] == "title" else seg.get("chapter") or seg["text"].rstrip(".")
         else:
