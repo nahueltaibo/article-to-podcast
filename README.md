@@ -9,3 +9,4 @@ Planning docs live in [.docs](.docs):
 - [Presentation format](.docs/presentation-format.md)
 - [Roadmap](.docs/roadmap.md)
 - [TTS spike](.docs/spikes/tts.md)
+- [Build and release](.docs/release.md)

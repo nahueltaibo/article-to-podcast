@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# PRs drop stale runs. Main never cancels, so a release can't stop halfway.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  python:
+    name: Python tests
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      # Skips the tts group: PyTorch is gigabytes and no test needs it.
+      - run: uv sync --locked --no-default-groups --group dev
+      - run: uv run --no-sync pytest -q
+
+  android:
+    name: Android build and test
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+      - run: ./gradlew lintDebug testDebugUnitTest assembleDebug
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: android-reports
+          path: android/app/build/reports/
+          retention-days: 14
+
+  release:
+    name: Release to Google Play
+    needs: [python, android]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ${{ vars.CI_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - id: version
+        name: Check for a major or minor version bump
+        run: python3 scripts/release_check.py >> "$GITHUB_OUTPUT"
+      - if: steps.version.outputs.release == 'true'
+        name: Check release secrets
+        env:
+          PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          KEYSTORE: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+        run: |
+          missing=""
+          [ -n "$PLAY_JSON" ] || missing="$missing PLAY_SERVICE_ACCOUNT_JSON"
+          [ -n "$KEYSTORE" ] || missing="$missing UPLOAD_KEYSTORE_BASE64"
+          [ -n "$PASSWORD" ] || missing="$missing UPLOAD_KEYSTORE_PASSWORD"
+          if [ -n "$missing" ]; then echo "::error::Missing secrets:$missing"; exit 1; fi
+      - if: steps.version.outputs.release == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - if: steps.version.outputs.release == 'true'
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools platforms;android-36 build-tools;36.0.0"
+      - if: steps.version.outputs.release == 'true'
+        uses: gradle/actions/setup-gradle@v4
+      - if: steps.version.outputs.release == 'true'
+        name: Build the signed bundle
+        working-directory: android
+        env:
+          UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+          PAGECAST_KEYSTORE_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          PAGECAST_KEY_PASSWORD: ${{ secrets.UPLOAD_KEYSTORE_PASSWORD }}
+          PAGECAST_KEY_ALIAS: upload
+        run: |
+          export PAGECAST_KEYSTORE_FILE="$RUNNER_TEMP/upload.jks"
+          echo "$UPLOAD_KEYSTORE_BASE64" | base64 -d > "$PAGECAST_KEYSTORE_FILE"
+          ./gradlew bundleRelease
+          rm -f "$PAGECAST_KEYSTORE_FILE"
+      - if: steps.version.outputs.release == 'true'
+        name: Upload to the internal testing track
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.nahueltaibo.pagecast
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
+      - if: steps.version.outputs.release == 'true'
+        name: Tag and publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cp android/app/build/outputs/bundle/release/app-release.aab "pagecast-$VERSION.aab"
+          gh release create "v$VERSION" "pagecast-$VERSION.aab" \
+            --target "$GITHUB_SHA" --title "Pagecast $VERSION" --generate-notes
