@@ -12,6 +12,7 @@ audio-presenter-feed/
   state/seen.json
   episodes/
     2026-11-20-anthropic-formal-verification/
+      script.json
       presentation.json
       audio.m4a
       chapters.json
@@ -21,6 +22,8 @@ audio-presenter-feed/
 ```
 
 Episode folders are named `<publish date>-<source id>-<slug>`, so they sort by date and never collide.
+
+`script.json` is what Claude wrote: the segments with their text and media references, without timings. Everything else in the folder is built from it, so swapping the voice means rendering again from the script.
 
 ## presentation.json
 

@@ -71,6 +71,7 @@ Claude writes `script.json`, and a JSON schema check rejects malformed output be
 - Renders each segment to speech, then joins the segments into one audio file. Segment start times come from the measured durations.
 - Uses one TTS interface with two backends: a local open model or a paid API. The [TTS spike](roadmap.md#m0--spikes) picks one.
 - A paid API needs its key stored as a routine secret.
+- **Audio is replaceable.** The render step reads only `script.json`, so it can run again with another voice or engine without calling Claude. It overwrites the audio file and the segment timings. The script and the images stay the same.
 
 ### Validate and publish
 

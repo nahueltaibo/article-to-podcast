@@ -7,7 +7,8 @@ flowchart TD
     M0[M0 Spikes<br/>TTS voices · cloud routine] --> M1[M1 Discover + extract]
     M1 --> M2[M2 Narrate + render]
     M2 --> M3[M3 Scheduled routine + feed repo<br/>listen in AntennaPod]
-    M3 --> M4[M4 Android player]
+    M0 -->|reference presentation| M4[M4 Android player]
+    M3 --> M4
     M4 --> M5[M5 Polish]
 ```
 
@@ -28,6 +29,8 @@ flowchart TD
 - Push to a second private repo (`audio-presenter-feed`).
 - Read a secret for a paid TTS key.
 - Measure how much subscription usage one article costs.
+
+**Reference presentation.** Turn one Anthropic post into a full presentation on the PC, recorded with the TTS engine the spike picked. This is the first playable version, and it uses the real voice. The app is built against it, so M4 can start before M3 is done. If the voice changes later, only the audio gets rendered again.
 
 ### M1 — Discover and extract
 
