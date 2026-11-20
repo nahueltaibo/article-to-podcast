@@ -25,3 +25,5 @@ Thumbs.db
 spikes/**/*.wav
 spikes/**/*.mp3
 output/
+__pycache__/
+spikes/tts/out/
