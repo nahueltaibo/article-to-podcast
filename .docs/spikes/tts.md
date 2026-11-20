@@ -2,7 +2,7 @@
 
 Find a voice you'd happily listen to for 20 minutes a day, from free models that run locally.
 
-**Decision:** Kokoro `af_heart` is the default. The other local models are still being compared.
+**Decision:** Kokoro `af_heart` is the default. Qwen3-TTS `Ryan` comes second, and is the male voice option. It renders at about 2x real time, so a 30-minute article takes about an hour. Choosing the voice per episode is a later feature.
 
 ## Test Text
 

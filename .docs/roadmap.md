@@ -10,15 +10,16 @@ flowchart TD
 
 ## M0 — TTS Spike
 
-**Decided:** Kokoro `af_heart` is the default voice. The other free local models are still being compared. See [spikes/tts.md](spikes/tts.md).
+**Decided:** Kokoro `af_heart` is the default voice, with Qwen3-TTS `Ryan` as the male alternative. See [spikes/tts.md](spikes/tts.md).
 
 ## M1 — Article to Podcast
 
 **Built.** `/article-to-podcast <url>` in Claude Code produces an episode and updates `podcast.xml`. The first episode is [harness-design-long-running-apps](https://www.anthropic.com/research/harness-design-long-running-apps): 34 minutes and 20 chapters.
 
+Images change in sync in AntennaPod. But AntennaPod draws chapter art as a square with 32 dp margins and has no fullscreen view, so screenshots and charts are too small to read. That's what moves our own player forward.
+
 Left to finish:
 
-- Listen to it in AntennaPod and confirm the images change at the right moments.
 - Run the second test article, [formal-verification](https://www.anthropic.com/research/formal-verification), for its GIF, looping videos, and footnotes.
 
 **Done when** a real Anthropic post plays in AntennaPod, the images change at the right moments, and nothing has to be fixed by hand.
