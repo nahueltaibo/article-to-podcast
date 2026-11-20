@@ -1,0 +1,79 @@
+{
+ "engine": "chatterbox",
+ "voice": "default-ex0.5",
+ "audio_s": 157.9,
+ "synth_s": 89.4,
+ "rtf": 0.566,
+ "segments": [
+  {
+   "id": "s1",
+   "audio_s": 8.12,
+   "synth_s": 11.52
+  },
+  {
+   "id": "s2",
+   "audio_s": 17.16,
+   "synth_s": 8.58
+  },
+  {
+   "id": "s3",
+   "audio_s": 2.68,
+   "synth_s": 1.72
+  },
+  {
+   "id": "s4",
+   "audio_s": 23.04,
+   "synth_s": 11.94
+  },
+  {
+   "id": "s5",
+   "audio_s": 13.16,
+   "synth_s": 7.18
+  },
+  {
+   "id": "s6",
+   "audio_s": 1.28,
+   "synth_s": 1.06
+  },
+  {
+   "id": "s7",
+   "audio_s": 11.08,
+   "synth_s": 5.92
+  },
+  {
+   "id": "s8",
+   "audio_s": 12.8,
+   "synth_s": 6.51
+  },
+  {
+   "id": "s9",
+   "audio_s": 8.12,
+   "synth_s": 4.37
+  },
+  {
+   "id": "s10",
+   "audio_s": 9.92,
+   "synth_s": 4.93
+  },
+  {
+   "id": "s11",
+   "audio_s": 19.12,
+   "synth_s": 10.23
+  },
+  {
+   "id": "s12",
+   "audio_s": 19.08,
+   "synth_s": 9.28
+  },
+  {
+   "id": "s13",
+   "audio_s": 8.88,
+   "synth_s": 4.18
+  },
+  {
+   "id": "s14",
+   "audio_s": 3.48,
+   "synth_s": 1.94
+  }
+ ]
+}
