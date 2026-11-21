@@ -46,7 +46,7 @@ Checks `script.json` against [the schema](../src/audio_presenter/schemas/script.
 
 - `feed` writes `podcast.xml` and each episode's `chapters.json`, with absolute URLs for the LAN address or `--base-url`.
 - Each item carries a `<category>` per area from `extract --category`, and a `<pagecast:source>` from `extract --source`. Items sort by publish date.
-- `serve` rebuilds the feed and serves `output/` on port 8000. Python's file server doesn't support HTTP range requests, so download episodes in AntennaPod rather than streaming them.
+- `serve` rebuilds the feed, writes the subscribe page `index.html`, and serves `output/` on port 8000. The page carries a QR code of its own URL, the APK link, and a `pagecast://add?feed=<url>` button the app handles. If the port is taken, `serve` assumes it's already running and exits. Python's file server doesn't support HTTP range requests, so download episodes in AntennaPod rather than streaming them.
 - **Recommended feed.** [pagecast-podcasts](https://github.com/nahueltaibo/pagecast-podcasts) holds narrated Anthropic articles, served by GitHub Pages at `https://nahueltaibo.github.io/pagecast-podcasts/podcast.xml`. It's a separate repo so plugin installs of this one stay small. Pagecast subscribes to it by default, and settings turn it off.
 
 ## Tooling
@@ -55,7 +55,7 @@ Checks `script.json` against [the schema](../src/audio_presenter/schemas/script.
 | --- | --- |
 | Language | Python 3.12 with uv. Kokoro doesn't support 3.13 yet. |
 | TTS | Kokoro-82M, voice `af_heart`, on CUDA. A 34-minute article renders in under a minute. |
-| Audio | ffmpeg |
+| Audio | ffmpeg, from PATH or the build bundled in `imageio-ffmpeg` |
 | ID3 chapters | mutagen |
 | Narration | Claude Code skill |
 

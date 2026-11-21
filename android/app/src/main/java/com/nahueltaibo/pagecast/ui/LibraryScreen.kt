@@ -62,6 +62,7 @@ private val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
 fun LibraryScreen(
     state: LibraryState,
     onAddFeed: (String) -> Unit,
+    onDismissPendingFeed: () -> Unit,
     onRefresh: () -> Unit,
     onDownload: (RemoteEpisode) -> Unit,
     onDelete: (LocalEpisode) -> Unit,
@@ -130,6 +131,10 @@ fun LibraryScreen(
     }
 
     if (adding) AddFeedDialog(onAdd = { onAddFeed(it); adding = false }, onDismiss = { adding = false })
+    // A web page can open the link, so the listener confirms the feed before it's added.
+    state.pendingFeed?.let { feed ->
+        AddFeedDialog(initial = feed, onAdd = onAddFeed, onDismiss = onDismissPendingFeed)
+    }
     state.error?.let { message ->
         AlertDialog(
             onDismissRequest = onDismissError,
@@ -257,8 +262,8 @@ fun durationLabel(ms: Long): String {
 }
 
 @Composable
-private fun AddFeedDialog(onAdd: (String) -> Unit, onDismiss: () -> Unit) {
-    var url by remember { mutableStateOf("") }
+private fun AddFeedDialog(onAdd: (String) -> Unit, onDismiss: () -> Unit, initial: String = "") {
+    var url by remember(initial) { mutableStateOf(initial) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add podcast") },

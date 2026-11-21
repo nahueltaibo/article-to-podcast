@@ -25,6 +25,8 @@ data class LibraryState(
     val downloads: Map<String, Float> = emptyMap(),
     val filter: LibraryFilter = LibraryFilter(),
     val refreshing: Boolean = false,
+    /** A feed from a pagecast://add link, waiting for the listener to confirm it. */
+    val pendingFeed: String? = null,
     val error: String? = null,
 )
 
@@ -53,8 +55,15 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     fun addFeed(url: String) {
         if (url.isBlank()) return
         library.addFeed(url)
+        clearPendingFeed()
         refresh()
     }
+
+    fun offerFeed(url: String) {
+        if (url in library.feeds()) refresh() else _state.update { it.copy(pendingFeed = url) }
+    }
+
+    fun clearPendingFeed() = _state.update { it.copy(pendingFeed = null) }
 
     fun download(episode: RemoteEpisode) {
         if (episode.id in _state.value.downloads) return

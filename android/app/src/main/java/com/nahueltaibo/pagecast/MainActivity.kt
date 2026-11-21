@@ -1,6 +1,7 @@
 package com.nahueltaibo.pagecast
 
 import android.content.ComponentName
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -28,12 +29,14 @@ import com.nahueltaibo.pagecast.ui.LibraryViewModel
 import com.nahueltaibo.pagecast.ui.PlayerScreen
 import com.nahueltaibo.pagecast.ui.SettingsScreen
 import com.nahueltaibo.pagecast.data.Settings
+import com.nahueltaibo.pagecast.data.feedFromAddLink
 
 class MainActivity : ComponentActivity() {
     private val viewModel: LibraryViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) handleAddLink(intent)
         // The app is always dark, so system bar icons stay light even when the phone uses a light theme.
         enableEdgeToEdge(
             statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
@@ -63,6 +66,7 @@ class MainActivity : ComponentActivity() {
                     LibraryScreen(
                         state = state,
                         onAddFeed = viewModel::addFeed,
+                        onDismissPendingFeed = viewModel::clearPendingFeed,
                         onRefresh = viewModel::refresh,
                         onDownload = viewModel::download,
                         onDelete = viewModel::delete,
@@ -76,6 +80,15 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleAddLink(intent)
+    }
+
+    private fun handleAddLink(intent: Intent?) {
+        intent?.dataString?.let(::feedFromAddLink)?.let(viewModel::offerFeed)
     }
 }
 
