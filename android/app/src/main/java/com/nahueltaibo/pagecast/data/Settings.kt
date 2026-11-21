@@ -15,7 +15,13 @@ class Settings(context: Context) {
         get() = prefs.getBoolean(RECOMMENDED_FEED, true)
         set(value) = prefs.edit().putBoolean(RECOMMENDED_FEED, value).apply()
 
+    /** One speed for every episode, the default in AntennaPod and Pocket Casts. */
+    var speed: Float
+        get() = prefs.getFloat(SPEED, 1f)
+        set(value) = prefs.edit().putFloat(SPEED, value).apply()
+
     private companion object {
+        const val SPEED = "speed"
         const val CHIME = "chime"
         const val RECOMMENDED_FEED = "recommendedFeed"
     }

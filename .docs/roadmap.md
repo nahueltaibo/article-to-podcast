@@ -24,7 +24,7 @@ Images change in sync in AntennaPod. But AntennaPod draws chapter art as a squar
 **Built** in [android/](../android). A prototype to try the experience, nothing more:
 
 - Add a Pagecast feed by URL, then list and download its episodes for offline playback.
-- Play, pause, stop, and resume where you left off. Playback continues in the background, with lock screen and Bluetooth controls.
+- Play, pause, stop, and resume where you left off. Change speed from 0.5× to 3× in 0.1 steps or with presets. The speed carries over to every episode. Playback continues in the background, with lock screen and Bluetooth controls.
 - The current image fills the screen, and GIFs animate.
 - Tapping shows the controls over the image: seek bar, back and forward 30 seconds, chapter list. They fade after 4 seconds of playback.
 - A settings screen turns the chime on new media on or off, and the recommended feed.
