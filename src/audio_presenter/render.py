@@ -43,28 +43,39 @@ def silence(seconds: float) -> np.ndarray:
     return np.zeros(int(seconds * SAMPLE_RATE), dtype=np.float32)
 
 
-def run(episode_dir: Path, voice: str = DEFAULT_VOICE) -> dict:
-    script = json.loads((episode_dir / "script.json").read_text(encoding="utf-8"))
-    article = json.loads((episode_dir / "article.json").read_text(encoding="utf-8"))
-    tts = KokoroVoice(voice)
-    bell = chime()
-
-    parts, segments, cursor = [], [], 0
-    for seg in script["segments"]:
-        clip = [bell, silence(CHIME_GAP)] if seg.get("media") else []
-        clip += [tts(seg["text"]), silence(PAUSE_AFTER.get(seg["kind"], DEFAULT_PAUSE))]
-        audio = np.concatenate(clip)
-        parts.append(audio)
+def mix(script_segments: list[dict], tts, bell: np.ndarray) -> tuple[np.ndarray, np.ndarray, list[dict]]:
+    """Return the audio with chimes, the same audio with silence in their place, and the timed segments."""
+    full, narration, segments, cursor = [], [], [], 0
+    for seg in script_segments:
+        lead = [bell, silence(CHIME_GAP)] if seg.get("media") else []
+        body = [tts(seg["text"]), silence(PAUSE_AFTER.get(seg["kind"], DEFAULT_PAUSE))]
+        audio = np.concatenate(lead + body)
+        full.append(audio)
+        narration.append(np.concatenate([np.zeros_like(a) for a in lead] + body))
         start_ms = round(cursor * 1000 / SAMPLE_RATE)
         cursor += len(audio)
         segments.append({**seg, "startMs": start_ms, "endMs": round(cursor * 1000 / SAMPLE_RATE)})
         print(f"  {seg['id']} {seg['kind']:<13} {segments[-1]['endMs'] - start_ms:>6} ms")
+    return np.concatenate(full), np.concatenate(narration), segments
 
+
+def encode(samples: np.ndarray, dest: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         wav = Path(tmp) / "audio.wav"
-        sf.write(wav, np.concatenate(parts), SAMPLE_RATE)
+        sf.write(wav, samples, SAMPLE_RATE)
         subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
-                        "-ar", "44100", "-ac", "1", "-b:a", "96k", str(episode_dir / "audio.mp3")], check=True)
+                        "-ar", "44100", "-ac", "1", "-b:a", "96k", str(dest)], check=True)
+
+
+def run(episode_dir: Path, voice: str = DEFAULT_VOICE) -> dict:
+    script = json.loads((episode_dir / "script.json").read_text(encoding="utf-8"))
+    article = json.loads((episode_dir / "article.json").read_text(encoding="utf-8"))
+    bell = chime()
+    full, narration, segments = mix(script["segments"], KokoroVoice(voice), bell)
+    encode(full, episode_dir / "audio.mp3")
+    # Pagecast plays narration.mp3 and adds the chime itself, so listeners can turn it off.
+    encode(narration, episode_dir / "narration.mp3")
+    sf.write(episode_dir / "chime.wav", bell, SAMPLE_RATE, subtype="PCM_16")
 
     used = {s["media"] for s in segments if s.get("media")}
     presentation = {
@@ -74,7 +85,8 @@ def run(episode_dir: Path, voice: str = DEFAULT_VOICE) -> dict:
         "description": script["description"],
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "voice": {"engine": "kokoro", "voice": voice},
-        "audio": {"file": "audio.mp3", "durationMs": segments[-1]["endMs"]},
+        "audio": {"file": "audio.mp3", "narrationFile": "narration.mp3", "chimeFile": "chime.wav",
+                  "durationMs": segments[-1]["endMs"]},
         "cover": "cover.jpg" if (episode_dir / "cover.jpg").exists() else None,
         "segments": segments,
         "media": [m for m in article["media"] if m["id"] in used],

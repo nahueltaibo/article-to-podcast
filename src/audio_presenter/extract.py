@@ -192,6 +192,13 @@ def download_media(article: dict, episode_dir: Path) -> None:
                 else:
                     media_io.download_still(m["sourceUrl"], dest, client)
                 m["file"] = f"media/{dest.name}"
+                if m["type"] == "animation":
+                    gif = media_dir / f"{m['id']}.gif"
+                    if is_video:
+                        media_io.video_to_gif(m["sourceUrl"], gif)
+                    else:
+                        media_io.download_gif(m["sourceUrl"], gif, client)
+                    m["animatedFile"] = f"media/{gif.name}"
             except Exception as err:  # one broken asset shouldn't sink the episode
                 m["error"] = str(err)
     if not (episode_dir / "cover.jpg").exists():
