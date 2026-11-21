@@ -19,7 +19,7 @@ flowchart TD
 | Android build and test | PRs and main | `lintDebug`, `testDebugUnitTest`, `assembleDebug` |
 | Release to Google Play | main, after both pass | See below |
 
-Jobs run on a self-hosted runner when the repo's `CI_RUNNER` variable names one, and on GitHub-hosted runners otherwise. Pull requests from forks always run on GitHub-hosted runners, and their workflows wait for a maintainer's approval. A self-hosted runner takes one job at a time, so a run's jobs queue behind each other.
+Jobs run on GitHub-hosted `ubuntu-latest` runners. Workflows from outside contributors wait for a maintainer's approval.
 
 ## Releasing
 
