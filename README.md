@@ -9,7 +9,7 @@ Claude Code writes the narration on your own Claude subscription. Speech comes f
 In Claude Code:
 
 ```text
-/plugin marketplace add nahueltaibo/article-to-podcast
+/plugin marketplace add nahueltaibo/pagecast
 /plugin install pagecast@pagecast
 /pagecast:setup
 ```
