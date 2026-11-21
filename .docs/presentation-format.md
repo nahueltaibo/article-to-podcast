@@ -35,7 +35,7 @@ Episode folders are named `<publish date>-<URL slug>`, so they sort by date.
 
 ## script.json
 
-The contract between Claude and the pipeline. The schema is [script.schema.json](../src/audio_presenter/schemas/script.schema.json), and the [skill](../.claude/skills/article-to-podcast/SKILL.md) has the writing rules.
+The contract between Claude and the pipeline. The schema is [script.schema.json](../src/audio_presenter/schemas/script.schema.json), and the [skill](../skills/article-to-podcast/SKILL.md) has the writing rules.
 
 ```json
 {
