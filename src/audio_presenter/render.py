@@ -82,6 +82,8 @@ def run(episode_dir: Path, voice: str = DEFAULT_VOICE) -> dict:
         "formatVersion": 1,
         "id": episode_dir.name,
         "article": {k: article[k] for k in ("url", "title", "site", "publishedAt")},
+        "source": article.get("source") or article["site"],
+        "categories": article.get("categories", []),
         "description": script["description"],
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "voice": {"engine": "kokoro", "voice": voice},

@@ -23,11 +23,9 @@ From one article URL to one episode, playable in AntennaPod with images in sync.
 
 - **Sources.** Configured sites checked for new articles, with Anthropic research first.
 - **Scheduled generation.** A Claude Code cloud routine that runs without the PC.
-- **Hosting.** A private feed you can reach from anywhere, including from Pocket Casts.
 - **Own player, or a patch to AntennaPod.** Only if vibration on images or auto-pause at images turn out to be worth it.
 
 ## Not Planned
 
 - TTS on the phone. The voice quality isn't good enough.
 - Paywalled or login-only sources.
-- A public podcast feed.

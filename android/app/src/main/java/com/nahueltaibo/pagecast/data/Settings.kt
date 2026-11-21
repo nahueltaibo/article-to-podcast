@@ -10,7 +10,13 @@ class Settings(context: Context) {
         get() = prefs.getBoolean(CHIME, true)
         set(value) = prefs.edit().putBoolean(CHIME, value).apply()
 
+    /** On by default, so a fresh install has something to listen to. */
+    var recommendedFeed: Boolean
+        get() = prefs.getBoolean(RECOMMENDED_FEED, true)
+        set(value) = prefs.edit().putBoolean(RECOMMENDED_FEED, value).apply()
+
     private companion object {
         const val CHIME = "chime"
+        const val RECOMMENDED_FEED = "recommendedFeed"
     }
 }

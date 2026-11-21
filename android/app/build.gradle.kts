@@ -92,4 +92,6 @@ dependencies {
     testImplementation("junit:junit:4.13.2")
     // Android's org.json is a stub in JVM unit tests.
     testImplementation("org.json:json:20240303")
+    // The same pull parser Android ships, for feed parsing tests.
+    testImplementation("net.sf.kxml:kxml2:2.3.0")
 }

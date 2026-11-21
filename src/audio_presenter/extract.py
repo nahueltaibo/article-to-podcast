@@ -213,10 +213,13 @@ def episode_id(article: dict) -> str:
     return f"{article['publishedAt'] or datetime.now().date().isoformat()}-{slug}"
 
 
-def run(url: str, output: Path) -> Path:
+def run(url: str, output: Path, source: str | None = None, categories: list[str] = ()) -> Path:
     html = httpx.get(url, headers={"User-Agent": media_io.UA}, follow_redirects=True, timeout=30) \
         .raise_for_status().text
     article = extract(url, html)
+    # Where the episode came from, for filtering in the app. The page itself can't tell which listing linked to it.
+    article["source"] = source or article["site"]
+    article["categories"] = list(categories)
     episode_dir = output / "episodes" / episode_id(article)
     episode_dir.mkdir(parents=True, exist_ok=True)
     download_media(article, episode_dir)

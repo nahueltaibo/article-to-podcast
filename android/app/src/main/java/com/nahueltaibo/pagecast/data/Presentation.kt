@@ -17,6 +17,8 @@ data class Presentation(
     val segments: List<Segment>,
     val media: Map<String, Media>,
     val chapters: List<Chapter>,
+    val source: String? = null,
+    val categories: List<String> = emptyList(),
 ) {
     data class Segment(val startMs: Long, val media: String?)
     data class Media(val file: String?, val animatedFile: String?, val caption: String?)
@@ -77,6 +79,8 @@ data class Presentation(
                 chapters = root.optJSONArray("chapters")?.objects()?.map {
                     Chapter(it.getLong("startMs"), it.getString("title"), it.optNullableString("image"))
                 }.orEmpty(),
+                source = root.optNullableString("source"),
+                categories = root.optJSONArray("categories")?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty(),
             )
         }
 

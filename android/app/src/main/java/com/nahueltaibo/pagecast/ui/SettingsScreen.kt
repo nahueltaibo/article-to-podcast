@@ -27,6 +27,11 @@ import com.nahueltaibo.pagecast.data.Settings
 @Composable
 fun SettingsScreen(settings: Settings, onClose: () -> Unit) {
     var chime by remember { mutableStateOf(settings.chime) }
+    var recommended by remember { mutableStateOf(settings.recommendedFeed) }
+    fun toggleRecommended(value: Boolean) {
+        settings.recommendedFeed = value
+        recommended = value
+    }
     fun toggle(value: Boolean) {
         settings.chime = value
         chime = value
@@ -48,6 +53,14 @@ fun SettingsScreen(settings: Settings, onClose: () -> Unit) {
                 headlineContent = { Text("Chime on new media") },
                 supportingContent = { Text("Play a short ding when a new image or animation appears.") },
                 trailingContent = { Switch(checked = chime, onCheckedChange = ::toggle) },
+            )
+            ListItem(
+                modifier = Modifier.clickable { toggleRecommended(!recommended) },
+                headlineContent = { Text("Recommended feed") },
+                supportingContent = {
+                    Text("Narrated articles from Anthropic: Engineering, Economics, Societal Impacts, and Science. Downloaded episodes stay when you turn it off.")
+                },
+                trailingContent = { Switch(checked = recommended, onCheckedChange = ::toggleRecommended) },
             )
         }
     }

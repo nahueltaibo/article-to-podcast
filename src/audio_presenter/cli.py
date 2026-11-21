@@ -43,6 +43,8 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("extract", help="fetch an article into output/episodes/<id>/article.json")
     p.add_argument("url")
+    p.add_argument("--source", help="who published it, for example Anthropic. Default: the site name")
+    p.add_argument("--category", action="append", default=[], help="area it came from, for example Science. Repeatable")
     for name, text in (("validate", "check script.json"), ("build", "validate, render audio, embed chapters")):
         p = sub.add_parser(name, help=text)
         p.add_argument("episode", type=Path)
@@ -50,12 +52,13 @@ def main() -> None:
             p.add_argument("--voice", default=render.DEFAULT_VOICE)
     p = sub.add_parser("feed", help="write podcast.xml and chapters.json files")
     p.add_argument("--base-url", default=None, help=f"default: http://<LAN IP>:{PORT}")
+    p.add_argument("--title", default=feed.FEED_TITLE)
     sub.add_parser("serve", help=f"rebuild the feed and serve output/ on port {PORT}")
     sub.add_parser("doctor", help="check ffmpeg and the TTS model, then render a test sentence")
     args = parser.parse_args()
 
     if args.command == "extract":
-        print(extract.run(args.url, OUTPUT))
+        print(extract.run(args.url, OUTPUT, args.source, args.category))
     elif args.command == "validate":
         for warning in validate.validate(args.episode):
             print("warning:", warning)
@@ -67,7 +70,7 @@ def main() -> None:
         chapters = package.run(args.episode)
         print(f"{presentation['audio']['durationMs'] / 60000:.1f} min, {len(chapters)} chapters -> {args.episode / 'audio.mp3'}")
     elif args.command == "feed":
-        print(feed.run(OUTPUT, args.base_url or default_base()))
+        print(feed.run(OUTPUT, args.base_url or default_base(), args.title))
     elif args.command == "doctor":
         doctor()
     elif args.command == "serve":

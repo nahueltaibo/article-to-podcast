@@ -63,6 +63,8 @@ The contract between Claude and the pipeline. The schema is [script.schema.json]
   "formatVersion": 1,
   "id": "2026-03-24-harness-design-long-running-apps",
   "article": { "url": "https://www.anthropic.com/research/...", "title": "...", "site": "anthropic.com", "publishedAt": "2026-03-24" },
+  "source": "Anthropic",
+  "categories": ["Engineering"],
   "description": "...",
   "generatedAt": "2026-11-20T19:07:02+00:00",
   "voice": { "engine": "kokoro", "voice": "af_heart" },
