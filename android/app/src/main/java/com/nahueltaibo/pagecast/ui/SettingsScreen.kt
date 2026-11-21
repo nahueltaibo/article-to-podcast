@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -25,19 +26,24 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.nahueltaibo.pagecast.data.FeedSources
 import com.nahueltaibo.pagecast.data.Settings
 import com.nahueltaibo.pagecast.data.ThemeMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(settings: Settings, theme: ThemeMode, onTheme: (ThemeMode) -> Unit, onClose: () -> Unit) {
+fun SettingsScreen(
+    settings: Settings,
+    theme: ThemeMode,
+    onTheme: (ThemeMode) -> Unit,
+    feeds: List<String>,
+    onRemoveFeed: (String) -> Unit,
+    onClose: () -> Unit,
+) {
     var chime by remember { mutableStateOf(settings.chime) }
-    var recommended by remember { mutableStateOf(settings.recommendedFeed) }
-    fun toggleRecommended(value: Boolean) {
-        settings.recommendedFeed = value
-        recommended = value
-    }
+    var sources by remember { mutableStateOf(feeds) }
     fun toggle(value: Boolean) {
         settings.chime = value
         chime = value
@@ -75,13 +81,25 @@ fun SettingsScreen(settings: Settings, theme: ThemeMode, onTheme: (ThemeMode) ->
                 trailingContent = { Switch(checked = chime, onCheckedChange = ::toggle) },
             )
             ListItem(
-                modifier = Modifier.clickable { toggleRecommended(!recommended) },
-                headlineContent = { Text("Recommended feed") },
+                headlineContent = { Text("Sources") },
                 supportingContent = {
-                    Text("Narrated articles from Anthropic: Engineering, Economics, Societal Impacts, and Science. Downloaded episodes stay when you turn it off.")
+                    Text(if (sources.isEmpty()) "No sources. Add one from the library." else "Downloaded episodes stay when you remove a source.")
                 },
-                trailingContent = { Switch(checked = recommended, onCheckedChange = ::toggleRecommended) },
             )
+            sources.forEach { url ->
+                ListItem(
+                    headlineContent = {
+                        Text(if (url == FeedSources.DEFAULT) "Pagecast: Anthropic" else url, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    },
+                    supportingContent = if (url == FeedSources.DEFAULT) ({ Text(url) }) else null,
+                    trailingContent = {
+                        IconButton(onClick = {
+                            onRemoveFeed(url)
+                            sources = sources - url
+                        }) { Icon(Icons.Default.Delete, "Remove $url") }
+                    },
+                )
+            }
         }
     }
 }
