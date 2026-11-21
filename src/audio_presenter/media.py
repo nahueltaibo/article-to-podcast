@@ -1,4 +1,4 @@
-"""Turn remote images, GIFs, and videos into still JPEGs that podcast apps accept as chapter art."""
+"""Turn remote images, GIFs, and videos into still JPEGs for chapter art, and animations into GIFs for Pagecast."""
 import json
 import subprocess
 from io import BytesIO
@@ -38,3 +38,14 @@ def video_still(url: str, dest: Path, loop: bool) -> None:
                    check=True)
     save_jpeg(Image.open(tmp), dest)
     tmp.unlink()
+
+
+def download_gif(url: str, dest: Path, client: httpx.Client) -> None:
+    dest.write_bytes(client.get(url, headers={"User-Agent": UA}).raise_for_status().content)
+
+
+def video_to_gif(url: str, dest: Path, width: int = 720, fps: int = 12) -> None:
+    """Looping videos become GIFs, which the app plays like any image. A generated palette keeps colors clean."""
+    graph = (f"fps={fps},scale={width}:-2:flags=lanczos,split[a][b];"
+             "[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", url, "-filter_complex", graph, str(dest)], check=True)

@@ -79,6 +79,7 @@ The contract between Claude and the pipeline. The schema is [script.schema.json]
 
 - `segments` cover the audio end to end, in order, with no gaps. A segment's range includes its chime and the pause after it.
 - `media[].type` is `image`, `animation` (a GIF or looping video), `video`, or `embed`.
+- An `animation` also has `animatedFile`, a GIF that Pagecast plays in place of the still. Looping videos are converted to 720 px, 12 fps GIFs.
 - A breaking change bumps `formatVersion`.
 
 ## Chapters
@@ -98,6 +99,7 @@ A standard RSS 2.0 feed with the iTunes and Podcasting 2.0 namespaces. Each item
 
 - `enclosure` pointing to `audio.mp3`
 - `podcast:chapters` pointing to `chapters.json`
+- `pagecast:presentation` pointing to `presentation.json`, which is how the Pagecast app finds the timeline and media. Other apps ignore it.
 - the episode cover as `itunes:image`
 - the article URL as the link and in the description
 - `generatedAt` as `pubDate`, so new episodes show up on top even for older articles
