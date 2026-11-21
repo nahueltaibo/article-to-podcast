@@ -60,4 +60,4 @@ Delete the downloaded JSON key once it's set.
 
 ## Required checks
 
-No status checks are required yet, so a PR with failing checks can still merge. A broken main still can't ship, because the release job needs both test jobs to pass on main first.
+Branch protection on `main` requires `Python tests` and `Android build and test` to pass before a PR merges. It also blocks force pushes and deleting `main`. Admins can still bypass it.
