@@ -1,0 +1,9 @@
+{
+  "name": "pagecast",
+  "version": "0.1.0",
+  "description": "Turn an article URL into a podcast episode: local TTS narration with the article's images as chapter art.",
+  "author": { "name": "Nahuel Taibo" },
+  "homepage": "https://github.com/nahueltaibo/article-to-podcast",
+  "repository": "https://github.com/nahueltaibo/article-to-podcast",
+  "keywords": ["podcast", "tts", "kokoro", "articles"]
+}

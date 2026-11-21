@@ -1,13 +1,15 @@
-"""Command line entry point: extract, validate, build, feed, serve."""
+"""Command line entry point: extract, validate, build, feed, serve, doctor."""
 import argparse
 import functools
 import http.server
+import os
+import shutil
 import socket
 from pathlib import Path
 
 from . import extract, feed, package, render, validate
 
-OUTPUT = Path("output")
+OUTPUT = Path(os.environ.get("AUDIO_PRESENTER_OUTPUT", "output"))
 PORT = 8000
 
 
@@ -20,6 +22,20 @@ def lan_ip() -> str:
 
 def default_base() -> str:
     return f"http://{lan_ip()}:{PORT}"
+
+
+def doctor() -> None:
+    ffmpeg = shutil.which("ffmpeg")
+    print("ffmpeg:", ffmpeg or "MISSING")
+    import torch
+
+    print("torch:", torch.__version__, "| device:", "cuda" if torch.cuda.is_available() else "cpu")
+    # The first call downloads the Kokoro weights from Hugging Face, about 330 MB.
+    audio = render.KokoroVoice()("Your podcast setup works.")
+    print(f"kokoro: rendered {len(audio) / render.SAMPLE_RATE:.1f} s of speech")
+    if not ffmpeg:
+        raise SystemExit("ffmpeg is missing. Install it and make sure it's on PATH.")
+    print("ok")
 
 
 def main() -> None:
@@ -35,6 +51,7 @@ def main() -> None:
     p = sub.add_parser("feed", help="write podcast.xml and chapters.json files")
     p.add_argument("--base-url", default=None, help=f"default: http://<LAN IP>:{PORT}")
     sub.add_parser("serve", help=f"rebuild the feed and serve output/ on port {PORT}")
+    sub.add_parser("doctor", help="check ffmpeg and the TTS model, then render a test sentence")
     args = parser.parse_args()
 
     if args.command == "extract":
@@ -51,6 +68,8 @@ def main() -> None:
         print(f"{presentation['audio']['durationMs'] / 60000:.1f} min, {len(chapters)} chapters -> {args.episode / 'audio.mp3'}")
     elif args.command == "feed":
         print(feed.run(OUTPUT, args.base_url or default_base()))
+    elif args.command == "doctor":
+        doctor()
     elif args.command == "serve":
         base = default_base()
         feed.run(OUTPUT, base)

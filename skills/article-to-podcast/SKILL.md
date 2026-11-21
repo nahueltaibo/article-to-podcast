@@ -1,22 +1,25 @@
 ---
 name: article-to-podcast
 description: Turn an article URL into a podcast episode with narration and chapter images in sync. Use when the user gives an article URL and wants it as a podcast episode, or says /article-to-podcast <url>.
+allowed-tools: Bash(uv run --project "${CLAUDE_PLUGIN_ROOT}" audio-presenter *)
 ---
 
 # Article to Podcast
 
 You do one thing the scripts can't: write the narration. Everything else is a command.
 
+Run every command as `uv run --project "${CLAUDE_PLUGIN_ROOT}" audio-presenter <command>`, shortened to `audio-presenter` below. Episodes and the feed go to `output/` in the current folder, or to `AUDIO_PRESENTER_OUTPUT` when it's set. If a command fails with a missing ffmpeg, torch, or Kokoro, run the `setup` skill first.
+
 ## Steps
 
-1. `uv run audio-presenter extract <url>`. It prints the episode folder, for example `output/episodes/2026-03-24-harness-design-long-running-apps`.
+1. `audio-presenter extract <url>`. It prints the episode folder, for example `output/episodes/2026-03-24-harness-design-long-running-apps`.
 2. Read `article.json` in that folder.
 3. Open every still in `media/` with the Read tool. You can't describe an image you haven't looked at.
 4. Write `script.json` in the episode folder, following the rules below.
-5. `uv run audio-presenter validate <folder>`. Fix every error. Each warning means an image is never shown, so make sure skipping it was deliberate.
-6. `uv run audio-presenter build <folder>`. It renders the audio and embeds the chapters.
-7. `uv run audio-presenter feed`.
-8. Tell the user the episode length and chapter count. If the server isn't running, tell them to start it with `uv run audio-presenter serve` and subscribe in AntennaPod to the URL it prints.
+5. `audio-presenter validate <folder>`. Fix every error. Each warning means an image is never shown, so make sure skipping it was deliberate.
+6. `audio-presenter build <folder>`. It renders the audio and embeds the chapters.
+7. `audio-presenter feed`.
+8. Tell the user the episode length and chapter count. If the server isn't running, offer to start `audio-presenter serve` in the background. Then tell them to subscribe in AntennaPod to the URL it prints.
 
 ## script.json
 
