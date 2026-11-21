@@ -11,6 +11,7 @@ import soundfile as sf
 from . import tools
 
 SAMPLE_RATE = 24000
+MP3_BITRATE = "64k"
 PAUSE_AFTER = {"title": 1.0, "heading": 0.8}
 DEFAULT_PAUSE = 0.6
 CHIME_GAP = 0.25
@@ -66,7 +67,7 @@ def encode(samples: np.ndarray, dest: Path) -> None:
         wav = Path(tmp) / "audio.wav"
         sf.write(wav, samples, SAMPLE_RATE)
         subprocess.run([tools.ffmpeg(), "-y", "-loglevel", "error", "-i", str(wav), "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
-                        "-ar", "44100", "-ac", "1", "-b:a", "96k", str(dest)], check=True)
+                        "-ar", str(SAMPLE_RATE), "-ac", "1", "-b:a", MP3_BITRATE, str(dest)], check=True)
 
 
 def run(episode_dir: Path, voice: str = DEFAULT_VOICE) -> dict:

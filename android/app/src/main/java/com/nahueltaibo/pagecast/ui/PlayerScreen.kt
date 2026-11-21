@@ -1,15 +1,16 @@
 package com.nahueltaibo.pagecast.ui
 
 import android.app.Activity
+import android.content.res.Configuration
 import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,13 +19,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
@@ -35,7 +36,10 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Replay30
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilledTonalIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,6 +48,7 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -57,16 +62,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.core.os.bundleOf
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
-import androidx.core.os.bundleOf
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.PlaybackParameters
@@ -179,99 +188,190 @@ fun PlayerScreen(episode: LocalEpisode, controller: MediaController, library: Li
     }
     val shown = seekingTo ?: position
     val chapterIndex = presentation.chapterIndexAt(shown)
+    val chapterTitle = presentation.chapters.getOrNull(chapterIndex)?.title
+    val figureStarts = presentation.figureStartsMs
+    val figureNumber = figureStarts.count { it <= shown }
+    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val noRipple = remember { MutableInteractionSource() }
+    // Panels sit on the empty bands around the figure. The backing keeps them readable if they overlap it.
+    val panel = MaterialTheme.colorScheme.background.copy(alpha = 0.9f)
+    val fraction = if (duration > 0) (shown.toFloat() / duration).coerceIn(0f, 1f) else 0f
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .clickable(interactionSource = noRipple, indication = null) {
-                controlsVisible = true
-                touch()
-            },
-    ) {
-        AsyncImage(
-            model = presentation.imageAt(shown)?.let(episode::file),
-            imageLoader = imageLoader,
-            contentDescription = presentation.chapters.getOrNull(chapterIndex)?.title,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier.fillMaxSize(),
-        )
+    val playPause: @Composable (Int) -> Unit = { size ->
+        FilledIconButton(
+            onClick = { if (isPlaying) controller.pause() else controller.play(); touch() },
+            modifier = Modifier.size(size.dp),
+        ) {
+            Icon(
+                if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                if (isPlaying) "Pause" else "Play",
+                modifier = Modifier.size((size / 2).dp),
+            )
+        }
+    }
+    val seekBar: @Composable (Modifier) -> Unit = { modifier ->
+        Column(modifier) {
+            FigureMarks(figureStarts, duration)
+            Slider(
+                value = shown.coerceIn(0, duration).toFloat(),
+                onValueChange = { seekingTo = it.toLong(); touch() },
+                onValueChangeFinished = {
+                    seekingTo?.let(controller::seekTo)
+                    seekingTo = null
+                },
+                valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
+            )
+        }
+    }
 
-        AnimatedVisibility(controlsVisible, enter = fadeIn(), exit = fadeOut()) {
-            Box(
-                Modifier
-                    .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.5f))
-                    .clickable(interactionSource = noRipple, indication = null) { controlsVisible = false }
-                    .safeDrawingPadding(),
-            ) {
-                Row(Modifier.align(Alignment.TopStart).fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back", tint = Color.White) }
-                    Column(Modifier.weight(1f)) {
-                        Text(presentation.title, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        presentation.chapters.getOrNull(chapterIndex)?.let {
+    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Box(
+            Modifier
+                .fillMaxSize()
+                .clickable(interactionSource = noRipple, indication = null) {
+                    controlsVisible = !controlsVisible
+                    touch()
+                },
+        ) {
+            AsyncImage(
+                model = presentation.imageAt(shown)?.let(episode::file),
+                imageLoader = imageLoader,
+                contentDescription = chapterTitle,
+                contentScale = ContentScale.Fit,
+                modifier = Modifier.fillMaxSize(),
+            )
+
+            AnimatedVisibility(!controlsVisible, enter = fadeIn(), exit = fadeOut(), modifier = Modifier.align(Alignment.BottomStart)) {
+                Box(Modifier.fillMaxWidth().height(3.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest)) {
+                    Box(Modifier.fillMaxWidth(fraction).height(3.dp).background(MaterialTheme.colorScheme.tertiary))
+                }
+            }
+
+            AnimatedVisibility(controlsVisible, enter = fadeIn(), exit = fadeOut()) {
+                Box(Modifier.fillMaxSize().safeDrawingPadding()) {
+                    if (landscape) {
+                        FilledTonalIconButton(onClick = onClose, modifier = Modifier.align(Alignment.TopStart).padding(8.dp)) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
+                        Row(
+                            Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .background(panel)
+                                .clickable(interactionSource = noRipple, indication = null) { touch() }
+                                .padding(horizontal = 16.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            IconButton(onClick = { controller.seekBack(); touch() }) {
+                                Icon(Icons.Default.Replay30, "Back 30 seconds")
+                            }
+                            playPause(48)
+                            IconButton(onClick = { controller.seekForward(); touch() }) {
+                                Icon(Icons.Default.Forward30, "Forward 30 seconds")
+                            }
+                            Text(formatTime(shown), style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(horizontal = 8.dp))
+                            seekBar(Modifier.weight(1f))
                             Text(
-                                it.title,
-                                color = Color.White.copy(alpha = 0.8f),
+                                "-${formatTime(duration - shown)}",
                                 style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(horizontal = 8.dp),
                             )
+                            TextButton(onClick = { showSpeed = true; touch() }) { Text(Speed.label(speed)) }
+                            IconButton(onClick = { showChapters = true; touch() }) {
+                                Icon(Icons.AutoMirrored.Filled.List, "Chapters")
+                            }
                         }
-                    }
-                    IconButton(onClick = { showChapters = true; touch() }) {
-                        Icon(Icons.AutoMirrored.Filled.List, "Chapters", tint = Color.White)
-                    }
-                }
+                    } else {
+                        Row(
+                            Modifier
+                                .align(Alignment.TopStart)
+                                .fillMaxWidth()
+                                .background(panel)
+                                .clickable(interactionSource = noRipple, indication = null) { touch() }
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            IconButton(onClick = onClose) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back") }
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    presentation.title,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                if (chapterTitle != null && chapterTitle != presentation.title) {
+                                    Text(
+                                        chapterTitle,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
 
-                Row(
-                    Modifier.align(Alignment.Center),
-                    horizontalArrangement = Arrangement.spacedBy(32.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    IconButton(onClick = { controller.seekBack(); touch() }, Modifier.size(56.dp)) {
-                        Icon(Icons.Default.Replay30, "Back 30 seconds", tint = Color.White, modifier = Modifier.size(40.dp))
-                    }
-                    IconButton(
-                        onClick = { if (isPlaying) controller.pause() else controller.play(); touch() },
-                        Modifier.size(80.dp),
-                    ) {
-                        Icon(
-                            if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            if (isPlaying) "Pause" else "Play",
-                            tint = Color.White,
-                            modifier = Modifier.size(64.dp),
-                        )
-                    }
-                    IconButton(onClick = { controller.seekForward(); touch() }, Modifier.size(56.dp)) {
-                        Icon(Icons.Default.Forward30, "Forward 30 seconds", tint = Color.White, modifier = Modifier.size(40.dp))
-                    }
-                }
-
-                Column(Modifier.align(Alignment.BottomCenter).fillMaxWidth().padding(16.dp)) {
-                    Slider(
-                        value = shown.coerceIn(0, duration).toFloat(),
-                        onValueChange = { seekingTo = it.toLong(); touch() },
-                        onValueChangeFinished = {
-                            seekingTo?.let(controller::seekTo)
-                            seekingTo = null
-                        },
-                        valueRange = 0f..duration.toFloat().coerceAtLeast(1f),
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(formatTime(shown), color = Color.White)
-                        Spacer(Modifier.weight(1f))
-                        TextButton(onClick = { showSpeed = true; touch() }) {
-                            Text(Speed.label(speed), color = Color.White)
+                        Column(
+                            Modifier
+                                .align(Alignment.BottomCenter)
+                                .fillMaxWidth()
+                                .background(panel)
+                                .clickable(interactionSource = noRipple, indication = null) { touch() }
+                                .padding(horizontal = 20.dp, vertical = 12.dp),
+                        ) {
+                            if (figureNumber > 0) {
+                                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 8.dp)) {
+                                    Icon(
+                                        Icons.Outlined.Image,
+                                        null,
+                                        tint = MaterialTheme.colorScheme.tertiary,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        "Figure $figureNumber of ${figureStarts.size}",
+                                        color = MaterialTheme.colorScheme.tertiary,
+                                        style = MaterialTheme.typography.labelMedium,
+                                    )
+                                }
+                            }
+                            seekBar(Modifier.fillMaxWidth())
+                            Row {
+                                Text(formatTime(shown), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Spacer(Modifier.weight(1f))
+                                Text(
+                                    "-${formatTime(duration - shown)}",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            Row(
+                                Modifier.fillMaxWidth().padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(28.dp, Alignment.CenterHorizontally),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                IconButton(onClick = { controller.seekBack(); touch() }, Modifier.size(52.dp)) {
+                                    Icon(Icons.Default.Replay30, "Back 30 seconds", modifier = Modifier.size(32.dp))
+                                }
+                                playPause(76)
+                                IconButton(onClick = { controller.seekForward(); touch() }, Modifier.size(52.dp)) {
+                                    Icon(Icons.Default.Forward30, "Forward 30 seconds", modifier = Modifier.size(32.dp))
+                                }
+                            }
+                            Row(Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+                                TextButton(onClick = { showSpeed = true; touch() }) { Text(Speed.label(speed)) }
+                                TextButton(onClick = { showChapters = true; touch() }) {
+                                    Icon(Icons.AutoMirrored.Filled.List, null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("Chapters")
+                                }
+                                TextButton(onClick = ::stop) {
+                                    Icon(Icons.Default.Stop, null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(6.dp))
+                                    Text("Stop")
+                                }
+                            }
                         }
-                        TextButton(onClick = ::stop) {
-                            Icon(Icons.Default.Stop, null, tint = Color.White)
-                            Spacer(Modifier.width(4.dp))
-                            Text("Stop", color = Color.White)
-                        }
-                        Spacer(Modifier.weight(1f))
-                        Text(formatTime(duration), color = Color.White)
                     }
                 }
             }
@@ -297,11 +397,13 @@ fun PlayerScreen(episode: LocalEpisode, controller: MediaController, library: Li
                             showChapters = false
                             touch()
                         },
-                        colors = if (index == chapterIndex) {
-                            ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.secondaryContainer)
-                        } else {
-                            ListItemDefaults.colors()
-                        },
+                        colors = ListItemDefaults.colors(
+                            containerColor = if (index == chapterIndex) {
+                                MaterialTheme.colorScheme.secondaryContainer
+                            } else {
+                                MaterialTheme.colorScheme.surfaceContainerLow
+                            },
+                        ),
                         leadingContent = {
                             AsyncImage(
                                 model = chapter.image?.let(episode::file),
@@ -320,6 +422,20 @@ fun PlayerScreen(episode: LocalEpisode, controller: MediaController, library: Li
     }
 }
 
+/** One tick per figure, lined up with the seek bar below it. */
+@Composable
+private fun FigureMarks(startsMs: List<Long>, durationMs: Long) {
+    val color = MaterialTheme.colorScheme.tertiary
+    Canvas(Modifier.fillMaxWidth().height(8.dp)) {
+        if (durationMs <= 0) return@Canvas
+        val width = 3.dp.toPx()
+        startsMs.forEach { start ->
+            val x = (size.width - width) * (start.toFloat() / durationMs).coerceIn(0f, 1f)
+            drawRoundRect(color, Offset(x, 0f), Size(width, size.height), CornerRadius(width / 2))
+        }
+    }
+}
+
 /** Steps of 0.1 for fine control, plus the presets most listeners use. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -329,28 +445,37 @@ private fun SpeedSheet(speed: Float, remainingMs: Long, onSpeed: (Float) -> Unit
             Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text("Playback speed", style = MaterialTheme.typography.titleMedium)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = { onSpeed(Speed.step(speed, -1)) }, enabled = speed > Speed.MIN) {
+            Text("Playback speed", style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 8.dp)) {
+                FilledTonalIconButton(onClick = { onSpeed(Speed.step(speed, -1)) }, enabled = speed > Speed.MIN, modifier = Modifier.size(52.dp)) {
                     Icon(Icons.Default.Remove, "Slower")
                 }
                 Text(
                     Speed.label(speed),
                     style = MaterialTheme.typography.displaySmall,
-                    modifier = Modifier.padding(horizontal = 24.dp),
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.width(140.dp),
                 )
-                IconButton(onClick = { onSpeed(Speed.step(speed, 1)) }, enabled = speed < Speed.MAX) {
+                FilledTonalIconButton(onClick = { onSpeed(Speed.step(speed, 1)) }, enabled = speed < Speed.MAX, modifier = Modifier.size(52.dp)) {
                     Icon(Icons.Default.Add, "Faster")
                 }
             }
-            Text("${formatTime(remainingMs)} left at this speed", style = MaterialTheme.typography.bodyMedium)
+            Text(
+                "${formatTime(remainingMs)} left at this speed",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             Spacer(Modifier.size(16.dp))
-            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            // Equal-width chips, so every preset is visible without scrolling.
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 Speed.PRESETS.forEach { preset ->
                     FilterChip(
                         selected = Speed.clamp(speed) == preset,
                         onClick = { onSpeed(preset) },
-                        label = { Text(Speed.label(preset)) },
+                        label = {
+                            Text(Speed.label(preset), maxLines = 1, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
+                        },
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }

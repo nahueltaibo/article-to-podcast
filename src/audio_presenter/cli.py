@@ -7,7 +7,7 @@ import socket
 import webbrowser
 from pathlib import Path
 
-from . import extract, feed, package, render, subscribe, tools, validate
+from . import extract, feed, package, publish, recompress, render, subscribe, tools, validate
 
 OUTPUT = Path(os.environ.get("AUDIO_PRESENTER_OUTPUT", "output"))
 PORT = 8000
@@ -55,6 +55,11 @@ def main() -> None:
     p = sub.add_parser("feed", help="write podcast.xml and chapters.json files")
     p.add_argument("--base-url", default=None, help=f"default: http://<LAN IP>:{PORT}")
     p.add_argument("--title", default=feed.FEED_TITLE)
+    p = sub.add_parser("publish", help="upload podcast.xml, cover.jpg, and episodes/ to the R2 bucket")
+    p.add_argument("--bucket", default=os.environ.get("R2_BUCKET", publish.DEFAULT_BUCKET))
+    p.add_argument("--delete", action="store_true", help="also remove remote files that no longer exist locally")
+    p.add_argument("--dry-run", action="store_true")
+    sub.add_parser("recompress", help="re-encode every episode's MP3s at the current bitrate, then run feed")
     p = sub.add_parser("serve", help=f"rebuild the feed and serve output/ on port {PORT}")
     p.add_argument("--open", action="store_true", help="open the subscribe page in this computer's browser")
     sub.add_parser("doctor", help="check ffmpeg and the TTS model, then render a test sentence")
@@ -76,6 +81,10 @@ def main() -> None:
         base = args.base_url or default_base()
         print(feed.run(OUTPUT, base, args.title))
         subscribe.write(OUTPUT, base)
+    elif args.command == "publish":
+        publish.run(OUTPUT, args.bucket, args.delete, args.dry_run)
+    elif args.command == "recompress":
+        recompress.run(OUTPUT)
     elif args.command == "doctor":
         doctor()
     elif args.command == "serve":
