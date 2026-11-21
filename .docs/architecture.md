@@ -12,7 +12,7 @@ flowchart TD
     F --> S[serve on the LAN] --> A[AntennaPod]
 ```
 
-Claude only does the step that needs judgment: writing the narration. Everything else is the `audio-presenter` CLI in [src/audio_presenter](../src/audio_presenter). The [article-to-podcast skill](../.claude/skills/article-to-podcast/SKILL.md) runs the whole flow and holds the narration rules.
+Claude only does the step that needs judgment: writing the narration. Everything else is the `audio-presenter` CLI in [src/audio_presenter](../src/audio_presenter). The [article-to-podcast skill](../skills/article-to-podcast/SKILL.md) runs the whole flow and holds the narration rules. It ships as the `pagecast` Claude Code plugin, with a [setup skill](../skills/setup/SKILL.md) that installs and checks the environment.
 
 ## Steps
 

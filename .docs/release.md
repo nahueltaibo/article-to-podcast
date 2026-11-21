@@ -19,7 +19,7 @@ flowchart TD
 | Android build and test | PRs and main | `lintDebug`, `testDebugUnitTest`, `assembleDebug` |
 | Release to Google Play | main, after both pass | See below |
 
-Jobs run on the homelab runner when the repo's `CI_RUNNER` variable is `homelab-ci`, and on GitHub-hosted runners otherwise. The runner takes one job at a time, so a run's jobs queue behind each other. See the [homelab runner docs](https://github.com/nahueltaibo/homelab/blob/main/docs/bootstrap.md#13-ci-runners-for-private-repos).
+Jobs run on GitHub-hosted `ubuntu-latest` runners. Workflows from outside contributors wait for a maintainer's approval.
 
 ## Releasing
 
@@ -37,7 +37,7 @@ The version lives in [android/version.properties](../android/version.properties)
 | Secret | Value |
 | --- | --- |
 | `PLAY_SERVICE_ACCOUNT_JSON` | The service account's JSON key |
-| `UPLOAD_KEYSTORE_BASE64` | `C:/Users/nahueltaibo/.android-keys/pagecast-upload.jks`, base64-encoded |
+| `UPLOAD_KEYSTORE_BASE64` | Your upload keystore (`.jks`), base64-encoded |
 | `UPLOAD_KEYSTORE_PASSWORD` | `storePassword` from `android/keystore.properties` |
 
 If a secret is missing, the release job fails with its name and nothing ships.
@@ -50,9 +50,9 @@ If a secret is missing, the release job fails with its name and nothing ships.
 4. Set the secrets from Git Bash at the repo root. The values never show on screen:
 
 ```bash
-REPO=nahueltaibo/article-to-podcast
+REPO=<owner>/<repo>
 gh secret set PLAY_SERVICE_ACCOUNT_JSON --repo $REPO < /path/to/key.json
-base64 -w0 ~/.android-keys/pagecast-upload.jks | gh secret set UPLOAD_KEYSTORE_BASE64 --repo $REPO
+base64 -w0 /path/to/upload.jks | gh secret set UPLOAD_KEYSTORE_BASE64 --repo $REPO
 grep '^storePassword=' android/keystore.properties | cut -d= -f2- | tr -d '\n' | gh secret set UPLOAD_KEYSTORE_PASSWORD --repo $REPO
 ```
 
@@ -60,4 +60,4 @@ Delete the downloaded JSON key once it's set.
 
 ## Required checks
 
-GitHub only enforces required status checks on private repos with GitHub Pro. On the free plan, nothing stops merging a PR with failing checks. A broken main still can't ship, because the release job needs both test jobs to pass on main first.
+Branch protection on `main` requires `Python tests` and `Android build and test` to pass before a PR merges. It also blocks force pushes and deleting `main`. Admins can still bypass it.
