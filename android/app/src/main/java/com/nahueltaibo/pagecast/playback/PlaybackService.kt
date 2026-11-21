@@ -9,6 +9,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.PlayerMessage
@@ -59,7 +60,13 @@ class PlaybackService : MediaSessionService() {
             .setSeekBackIncrementMs(SKIP_MS)
             .setSeekForwardIncrementMs(SKIP_MS)
             .build()
+        player.playbackParameters = PlaybackParameters(Speed.clamp(settings.speed))
         player.addListener(object : Player.Listener {
+            // Saved here rather than in the UI, so lock screen and Bluetooth speed changes stick too.
+            override fun onPlaybackParametersChanged(params: PlaybackParameters) {
+                settings.speed = Speed.clamp(params.speed)
+            }
+
             override fun onIsPlayingChanged(isPlaying: Boolean) = savePosition()
 
             override fun onMediaItemTransition(item: MediaItem?, reason: Int) = scheduleChimes(player, item)

@@ -9,6 +9,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,15 +24,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Forward30
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Replay30
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
@@ -45,6 +50,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -63,6 +69,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.os.bundleOf
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
+import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import coil.ImageLoader
@@ -73,6 +80,7 @@ import com.nahueltaibo.pagecast.data.Library
 import com.nahueltaibo.pagecast.data.LocalEpisode
 import com.nahueltaibo.pagecast.playback.CHIME_AT_MS
 import com.nahueltaibo.pagecast.playback.CHIME_FILE
+import com.nahueltaibo.pagecast.playback.Speed
 import kotlinx.coroutines.delay
 
 private const val CONTROLS_TIMEOUT_MS = 4_000L
@@ -114,11 +122,17 @@ fun PlayerScreen(episode: LocalEpisode, controller: MediaController, library: Li
     var controlsVisible by remember { mutableStateOf(false) }
     var lastTouch by remember { mutableLongStateOf(0L) }
     var showChapters by remember { mutableStateOf(false) }
+    var showSpeed by remember { mutableStateOf(false) }
+    var speed by remember { mutableFloatStateOf(controller.playbackParameters.speed) }
 
     DisposableEffect(controller) {
         val listener = object : Player.Listener {
             override fun onIsPlayingChanged(playing: Boolean) {
                 isPlaying = playing
+            }
+
+            override fun onPlaybackParametersChanged(params: PlaybackParameters) {
+                speed = params.speed
             }
         }
         controller.addListener(listener)
@@ -248,6 +262,9 @@ fun PlayerScreen(episode: LocalEpisode, controller: MediaController, library: Li
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(formatTime(shown), color = Color.White)
                         Spacer(Modifier.weight(1f))
+                        TextButton(onClick = { showSpeed = true; touch() }) {
+                            Text(Speed.label(speed), color = Color.White)
+                        }
                         TextButton(onClick = ::stop) {
                             Icon(Icons.Default.Stop, null, tint = Color.White)
                             Spacer(Modifier.width(4.dp))
@@ -259,6 +276,15 @@ fun PlayerScreen(episode: LocalEpisode, controller: MediaController, library: Li
                 }
             }
         }
+    }
+
+    if (showSpeed) {
+        SpeedSheet(
+            speed = speed,
+            remainingMs = Speed.remainingMs(duration, shown, speed),
+            onSpeed = { controller.setPlaybackSpeed(it); touch() },
+            onDismiss = { showSpeed = false },
+        )
     }
 
     if (showChapters) {
@@ -287,6 +313,44 @@ fun PlayerScreen(episode: LocalEpisode, controller: MediaController, library: Li
                         },
                         headlineContent = { Text(chapter.title, maxLines = 2, overflow = TextOverflow.Ellipsis) },
                         supportingContent = { Text(formatTime(chapter.startMs)) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Steps of 0.1 for fine control, plus the presets most listeners use. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SpeedSheet(speed: Float, remainingMs: Long, onSpeed: (Float) -> Unit, onDismiss: () -> Unit) {
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp).padding(bottom = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text("Playback speed", style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = { onSpeed(Speed.step(speed, -1)) }, enabled = speed > Speed.MIN) {
+                    Icon(Icons.Default.Remove, "Slower")
+                }
+                Text(
+                    Speed.label(speed),
+                    style = MaterialTheme.typography.displaySmall,
+                    modifier = Modifier.padding(horizontal = 24.dp),
+                )
+                IconButton(onClick = { onSpeed(Speed.step(speed, 1)) }, enabled = speed < Speed.MAX) {
+                    Icon(Icons.Default.Add, "Faster")
+                }
+            }
+            Text("${formatTime(remainingMs)} left at this speed", style = MaterialTheme.typography.bodyMedium)
+            Spacer(Modifier.size(16.dp))
+            Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Speed.PRESETS.forEach { preset ->
+                    FilterChip(
+                        selected = Speed.clamp(speed) == preset,
+                        onClick = { onSpeed(preset) },
+                        label = { Text(Speed.label(preset)) },
                     )
                 }
             }
