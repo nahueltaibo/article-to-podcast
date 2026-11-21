@@ -32,7 +32,10 @@ data class Presentation(
     val playbackFile get() = if (playsOwnChime) narrationFile!! else audioFile
 
     /** Where the chime belongs: the start of every segment that brings new media. */
-    val chimeAtMs get() = if (playsOwnChime) segments.filter { it.media != null }.map { it.startMs } else emptyList()
+    val chimeAtMs get() = if (playsOwnChime) figureStartsMs else emptyList()
+
+    /** When each figure comes on screen, in order. */
+    val figureStartsMs get() = segments.filter { it.media != null }.map { it.startMs }
 
     /** Every file the episode needs offline. */
     fun files(): List<String> =
