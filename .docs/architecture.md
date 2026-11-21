@@ -42,12 +42,14 @@ Checks `script.json` against [the schema](../src/audio_presenter/schemas/script.
 - **Encode.** ffmpeg normalizes loudness to −16 LUFS and writes a 96 kbps mono MP3. Segment times come from the clip lengths, and get written to `presentation.json`.
 - **Package.** Builds the chapters and embeds them as ID3v2.3 `CHAP` and `CTOC` frames, each with its image, using mutagen.
 
-### feed and serve
+### feed, serve, and publish
 
 - `feed` writes `podcast.xml` and each episode's `chapters.json`, with absolute URLs for the LAN address or `--base-url`.
 - Each item carries a `<category>` per area from `extract --category`, and a `<pagecast:source>` from `extract --source`. Items sort by publish date.
 - `serve` rebuilds the feed and serves `output/` on port 8000. Python's file server doesn't support HTTP range requests, so download episodes in AntennaPod rather than streaming them.
-- **Recommended feed.** [pagecast-podcasts](https://github.com/nahueltaibo/pagecast-podcasts) holds narrated Anthropic articles, served by GitHub Pages at `https://nahueltaibo.github.io/pagecast-podcasts/podcast.xml`. It's a separate repo so plugin installs of this one stay small. Pagecast subscribes to it by default, and settings turn it off.
+- `publish` uploads `podcast.xml`, `cover.jpg`, and `episodes/` to the `pagecast` Cloudflare R2 bucket with rclone. It needs `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_ENDPOINT`. `--delete` also removes remote files that are gone locally.
+- `recompress` re-encodes existing episodes to the current MP3 settings (64 kbps, 24 kHz mono) and re-embeds their chapters.
+- **Default feed.** Narrated Anthropic articles live at `https://pagecast.taibo.ca/podcast.xml`, served from R2 with no git copy of the audio. Pagecast adds it to the listener's sources on first run, like any feed they added, and Settings → Sources removes it.
 
 ## Tooling
 

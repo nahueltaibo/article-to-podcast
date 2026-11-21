@@ -28,6 +28,7 @@ import com.nahueltaibo.pagecast.ui.PagecastTheme
 import com.nahueltaibo.pagecast.ui.isDark
 import com.nahueltaibo.pagecast.ui.PlayerScreen
 import com.nahueltaibo.pagecast.ui.SettingsScreen
+import com.nahueltaibo.pagecast.data.FeedSources
 import com.nahueltaibo.pagecast.data.Settings
 
 class MainActivity : ComponentActivity() {
@@ -60,6 +61,8 @@ class MainActivity : ComponentActivity() {
                             settings.theme = it
                             theme = it
                         },
+                        feeds = viewModel.library.feeds(),
+                        onRemoveFeed = viewModel.library::removeFeed,
                         onClose = {
                             settingsOpen = false
                             viewModel.refresh()
@@ -76,10 +79,7 @@ class MainActivity : ComponentActivity() {
                     LibraryScreen(
                         state = state,
                         onAddFeed = viewModel::addFeed,
-                        onUseRecommended = {
-                            settings.recommendedFeed = true
-                            viewModel.refresh()
-                        },
+                        onUseRecommended = { viewModel.addFeed(FeedSources.DEFAULT) },
                         onRefresh = viewModel::refresh,
                         onDownload = viewModel::download,
                         onDelete = viewModel::delete,

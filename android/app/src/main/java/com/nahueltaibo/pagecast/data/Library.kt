@@ -35,18 +35,20 @@ class Library(context: Context) {
     private val settings = Settings(context)
     private val http = OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS).build()
 
-    /** The recommended feed comes first while it's on, then the listener's own feeds. */
-    fun feeds(): List<String> =
-        (listOfNotNull(RECOMMENDED_FEED.takeIf { settings.recommendedFeed }) + userFeeds()).distinct()
+    init {
+        val seeded = prefs.getBoolean(SEEDED, false)
+        val feeds = FeedSources.seed(feeds().toSet(), seeded, settings.recommendedFeedTurnedOff)
+        prefs.edit().putStringSet(FEEDS, feeds).putBoolean(SEEDED, true).apply()
+    }
 
-    private fun userFeeds(): List<String> = prefs.getStringSet(FEEDS, emptySet()).orEmpty().sorted()
+    fun feeds(): List<String> = prefs.getStringSet(FEEDS, emptySet()).orEmpty().sorted()
 
     fun addFeed(url: String) {
-        prefs.edit().putStringSet(FEEDS, userFeeds().toSet() + url.trim()).apply()
+        prefs.edit().putStringSet(FEEDS, feeds().toSet() + url.trim()).apply()
     }
 
     fun removeFeed(url: String) {
-        prefs.edit().putStringSet(FEEDS, userFeeds().toSet() - url).apply()
+        prefs.edit().putStringSet(FEEDS, feeds().toSet() - url).apply()
     }
 
     fun position(id: String): Long = prefs.getLong("position:$id", 0)
@@ -106,8 +108,7 @@ class Library(context: Context) {
         }
 
     companion object {
-        /** Narrated Anthropic articles, published from the pagecast-podcasts repo. */
-        const val RECOMMENDED_FEED = "https://nahueltaibo.github.io/pagecast-podcasts/podcast.xml"
         private const val FEEDS = "feeds"
+        private const val SEEDED = "defaultFeedSeeded"
     }
 }

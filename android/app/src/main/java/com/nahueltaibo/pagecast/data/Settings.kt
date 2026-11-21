@@ -19,10 +19,9 @@ class Settings(context: Context) {
         get() = prefs.getBoolean(CHIME, true)
         set(value) = prefs.edit().putBoolean(CHIME, value).apply()
 
-    /** On by default, so a fresh install has something to listen to. */
-    var recommendedFeed: Boolean
-        get() = prefs.getBoolean(RECOMMENDED_FEED, true)
-        set(value) = prefs.edit().putBoolean(RECOMMENDED_FEED, value).apply()
+    /** Earlier builds had a switch for the default feed. Turned off there means don't add it now. */
+    val recommendedFeedTurnedOff: Boolean
+        get() = !prefs.getBoolean(RECOMMENDED_FEED, true)
 
     /** One speed for every episode, the default in AntennaPod and Pocket Casts. */
     var speed: Float
