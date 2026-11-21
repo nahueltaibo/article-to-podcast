@@ -14,7 +14,7 @@ public class MainActivity extends Activity {
         text.setGravity(Gravity.CENTER);
         text.setTextSize(22);
         text.setPadding(48, 48, 48, 48);
-        text.setText("Pagecast\n\nInstall test, version " + BuildConfigHolder.versionName(this));
+        text.setText("Pagecast\n\nInstall test, version " + BuildConfig.VERSION_NAME);
         setContentView(text);
     }
 }

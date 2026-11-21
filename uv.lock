@@ -57,40 +57,44 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "beautifulsoup4" },
-    { name = "en-core-web-sm" },
     { name = "httpx" },
     { name = "jsonschema" },
-    { name = "kokoro" },
     { name = "mutagen" },
     { name = "numpy" },
     { name = "pillow" },
-    { name = "pip" },
     { name = "soundfile" },
-    { name = "torch" },
 ]
 
 [package.dev-dependencies]
 dev = [
     { name = "pytest" },
 ]
+tts = [
+    { name = "en-core-web-sm" },
+    { name = "kokoro" },
+    { name = "pip" },
+    { name = "torch" },
+]
 
 [package.metadata]
 requires-dist = [
     { name = "beautifulsoup4", specifier = ">=4.12" },
-    { name = "en-core-web-sm", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },
     { name = "httpx", specifier = ">=0.27" },
     { name = "jsonschema", specifier = ">=4.23" },
-    { name = "kokoro", specifier = ">=0.9.4" },
     { name = "mutagen", specifier = ">=1.47" },
     { name = "numpy", specifier = ">=1.26" },
     { name = "pillow", specifier = ">=10.4" },
-    { name = "pip" },
     { name = "soundfile", specifier = ">=0.12" },
-    { name = "torch", specifier = ">=2.7", index = "https://download.pytorch.org/whl/cu128" },
 ]
 
 [package.metadata.requires-dev]
 dev = [{ name = "pytest", specifier = ">=8" }]
+tts = [
+    { name = "en-core-web-sm", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },
+    { name = "kokoro", specifier = ">=0.9.4" },
+    { name = "pip" },
+    { name = "torch", specifier = ">=2.7", index = "https://download.pytorch.org/whl/cu128" },
+]
 
 [[package]]
 name = "babel"

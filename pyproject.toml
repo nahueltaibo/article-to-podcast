@@ -11,11 +11,6 @@ dependencies = [
   "numpy>=1.26",
   "pillow>=10.4",
   "soundfile>=0.12",
-  "kokoro>=0.9.4",
-  "torch>=2.7",
-  # misaki tries to pip-install the spaCy model at runtime; pinning it avoids that.
-  "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
-  "pip",
 ]
 
 [project.scripts]
@@ -23,6 +18,17 @@ audio-presenter = "audio_presenter.cli:main"
 
 [dependency-groups]
 dev = ["pytest>=8"]
+# Only `build` needs these. CI skips them, since PyTorch alone is gigabytes.
+tts = [
+  "kokoro>=0.9.4",
+  "torch>=2.7",
+  # misaki tries to pip-install the spaCy model at runtime; pinning it avoids that.
+  "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
+  "pip",
+]
+
+[tool.uv]
+default-groups = ["dev", "tts"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
