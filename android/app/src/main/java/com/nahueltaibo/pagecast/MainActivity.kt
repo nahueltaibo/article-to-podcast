@@ -48,7 +48,10 @@ class MainActivity : ComponentActivity() {
                 val open = openId?.let { id -> state.rows.firstOrNull { it.id == id }?.local }
 
                 if (settingsOpen) {
-                    SettingsScreen(settings = remember { Settings(applicationContext) }, onClose = { settingsOpen = false })
+                    SettingsScreen(settings = remember { Settings(applicationContext) }, onClose = {
+                        settingsOpen = false
+                        viewModel.refresh()
+                    })
                 } else if (open != null && controller != null) {
                     PlayerScreen(
                         episode = open,

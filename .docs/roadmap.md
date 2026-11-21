@@ -1,12 +1,12 @@
 # Roadmap
 
-The first goal is one article URL turned into one episode that plays with images in sync. Sources, scheduling, and hosting wait until that works.
+The first goal is one article URL turned into one episode that plays with images in sync. Sources and scheduling wait until that works.
 
 ```mermaid
 flowchart TD
     M0[M0 TTS spike] --> M1[M1 Article to podcast]
     M1 --> M2[M2 Pagecast player MVP]
-    M2 --> L[Later<br/>sources · routine · hosting]
+    M2 --> L[Later<br/>sources · routine]
 ```
 
 ## M0 — TTS Spike
@@ -27,7 +27,8 @@ Images change in sync in AntennaPod. But AntennaPod draws chapter art as a squar
 - Play, pause, stop, and resume where you left off. Playback continues in the background, with lock screen and Bluetooth controls.
 - The current image fills the screen, and GIFs animate.
 - Tapping shows the controls over the image: seek bar, back and forward 30 seconds, chapter list. They fade after 4 seconds of playback.
-- A settings screen turns the chime on new media on or off.
+- A settings screen turns the chime on new media on or off, and the recommended feed.
+- The recommended feed is on by default. Episodes show their source and area, and chips filter by area.
 
 Not yet: vibration on new images, pause-on-media, zoom, a transcript, deleting old episodes automatically.
 
@@ -37,7 +38,6 @@ Not planned in detail yet:
 
 - Sources and discovery, with the Anthropic sitemap first.
 - A Claude Code cloud routine.
-- Private hosting reachable from anywhere, so friends and Pocket Casts can use the feed.
 
 ## Open Questions
 

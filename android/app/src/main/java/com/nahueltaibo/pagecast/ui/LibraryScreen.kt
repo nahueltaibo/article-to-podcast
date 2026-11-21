@@ -1,6 +1,8 @@
 package com.nahueltaibo.pagecast.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
@@ -19,6 +22,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,6 +59,9 @@ fun LibraryScreen(
     resumeAt: (String) -> Long,
 ) {
     var adding by remember { mutableStateOf(false) }
+    var category by rememberSaveable { mutableStateOf<String?>(null) }
+    val categories = state.rows.flatMap { it.categories }.distinct().sorted()
+    val shown = state.rows.filter { category == null || category in it.categories }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -70,13 +78,24 @@ fun LibraryScreen(
         Column(Modifier.fillMaxSize().padding(padding)) {
             if (state.feeds.isEmpty()) {
                 Text(
-                    "Add a Pagecast feed with + to get started.",
+                    "Add a Pagecast feed with +, or turn on the recommended feed in settings.",
                     Modifier.padding(16.dp),
                     style = MaterialTheme.typography.bodyLarge,
                 )
             }
+            if (categories.size > 1) {
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilterChip(selected = category == null, onClick = { category = null }, label = { Text("All") })
+                    categories.forEach { c ->
+                        FilterChip(selected = category == c, onClick = { category = if (category == c) null else c }, label = { Text(c) })
+                    }
+                }
+            }
             LazyColumn {
-                items(state.rows, key = { it.id }) { row ->
+                items(shown, key = { it.id }) { row ->
                     EpisodeItem(row, state.downloads[row.id], resumeAt(row.id), onDownload, onDelete, onOpen)
                     HorizontalDivider()
                 }
@@ -112,6 +131,7 @@ private fun EpisodeItem(
     }
     ListItem(
         modifier = Modifier.fillMaxWidth().clickable(enabled = local != null) { local?.let(onOpen) },
+        overlineContent = tagLine(row)?.let { { Text(it) } },
         headlineContent = { Text(row.title) },
         supportingContent = { Text(subtitle) },
         trailingContent = {
@@ -130,6 +150,10 @@ private fun EpisodeItem(
         },
     )
 }
+
+/** "Anthropic · Science", or null for untagged episodes. */
+private fun tagLine(row: EpisodeRow): String? =
+    (listOfNotNull(row.source) + row.categories).joinToString(" · ").ifEmpty { null }
 
 @Composable
 private fun AddFeedDialog(onAdd: (String) -> Unit, onDismiss: () -> Unit) {

@@ -6,13 +6,18 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.xmlpull.v1.XmlPullParser
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 
-/** An episode listed in a feed. */
-data class RemoteEpisode(val id: String, val title: String, val presentationUrl: String)
+/** An episode listed in a feed. [categories] are the areas it came from, such as Science. */
+data class RemoteEpisode(
+    val id: String,
+    val title: String,
+    val presentationUrl: String,
+    val source: String? = null,
+    val categories: List<String> = emptyList(),
+)
 
 /** An episode fully downloaded to [dir]. */
 data class LocalEpisode(val dir: File, val presentation: Presentation) {
@@ -24,16 +29,21 @@ data class LocalEpisode(val dir: File, val presentation: Presentation) {
 class Library(context: Context) {
     private val prefs = context.getSharedPreferences("library", Context.MODE_PRIVATE)
     private val root = File(context.filesDir, "episodes")
+    private val settings = Settings(context)
     private val http = OkHttpClient.Builder().readTimeout(60, TimeUnit.SECONDS).build()
 
-    fun feeds(): List<String> = prefs.getStringSet(FEEDS, emptySet()).orEmpty().sorted()
+    /** The recommended feed comes first while it's on, then the listener's own feeds. */
+    fun feeds(): List<String> =
+        (listOfNotNull(RECOMMENDED_FEED.takeIf { settings.recommendedFeed }) + userFeeds()).distinct()
+
+    private fun userFeeds(): List<String> = prefs.getStringSet(FEEDS, emptySet()).orEmpty().sorted()
 
     fun addFeed(url: String) {
-        prefs.edit().putStringSet(FEEDS, feeds().toSet() + url.trim()).apply()
+        prefs.edit().putStringSet(FEEDS, userFeeds().toSet() + url.trim()).apply()
     }
 
     fun removeFeed(url: String) {
-        prefs.edit().putStringSet(FEEDS, feeds().toSet() - url).apply()
+        prefs.edit().putStringSet(FEEDS, userFeeds().toSet() - url).apply()
     }
 
     fun position(id: String): Long = prefs.getLong("position:$id", 0)
@@ -50,7 +60,7 @@ class Library(context: Context) {
         }
 
     suspend fun fetchFeed(url: String): List<RemoteEpisode> = withContext(Dispatchers.IO) {
-        parseRss(get(url))
+        FeedParser.parse(get(url), Xml.newPullParser())
     }
 
     suspend fun download(episode: RemoteEpisode, onProgress: (Float) -> Unit): LocalEpisode =
@@ -89,34 +99,9 @@ class Library(context: Context) {
             response.body!!.string()
         }
 
-    private fun parseRss(xml: String): List<RemoteEpisode> {
-        val parser = Xml.newPullParser().apply { setInput(xml.reader()) }
-        val episodes = mutableListOf<RemoteEpisode>()
-        var title = ""
-        var guid = ""
-        var presentation: String? = null
-        var inItem = false
-        while (parser.next() != XmlPullParser.END_DOCUMENT) {
-            when (parser.eventType) {
-                XmlPullParser.START_TAG -> when (parser.name) {
-                    "item" -> { inItem = true; title = ""; guid = ""; presentation = null }
-                    "title" -> if (inItem) title = parser.nextText()
-                    "guid" -> if (inItem) guid = parser.nextText()
-                    "presentation" -> if (parser.namespace == PAGECAST_NS) presentation = parser.getAttributeValue(null, "url")
-                }
-                XmlPullParser.END_TAG -> if (parser.name == "item") {
-                    inItem = false
-                    // Items without a presentation are plain podcast episodes, which Pagecast can't show yet.
-                    presentation?.let { episodes += RemoteEpisode(guid.ifEmpty { it }, title, it) }
-                }
-            }
-        }
-        return episodes
-    }
-
-    private companion object {
-        const val FEEDS = "feeds"
-        // Must match PAGECAST_NS in the pipeline's feed.py.
-        const val PAGECAST_NS = "https://github.com/nahueltaibo/article-to-podcast/ns/1"
+    companion object {
+        /** Narrated Anthropic articles, published from the pagecast-podcasts repo. */
+        const val RECOMMENDED_FEED = "https://nahueltaibo.github.io/pagecast-podcasts/podcast.xml"
+        private const val FEEDS = "feeds"
     }
 }

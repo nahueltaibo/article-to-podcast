@@ -1,6 +1,6 @@
 # Architecture
 
-The core is a pipeline that turns one article URL into one podcast episode. It runs on the PC, driven by Claude Code on your Anthropic subscription. Sources, scheduling, and hosting come later, as layers around it.
+The core is a pipeline that turns one article URL into one podcast episode. It runs on the PC, driven by Claude Code on your Anthropic subscription. Sources and scheduling come later, as layers around it.
 
 ```mermaid
 flowchart TD
@@ -44,9 +44,10 @@ Checks `script.json` against [the schema](../src/audio_presenter/schemas/script.
 
 ### feed and serve
 
-- `feed` writes `podcast.xml` and each episode's `chapters.json`, with absolute URLs for the LAN address.
+- `feed` writes `podcast.xml` and each episode's `chapters.json`, with absolute URLs for the LAN address or `--base-url`.
+- Each item carries a `<category>` per area from `extract --category`, and a `<pagecast:source>` from `extract --source`. Items sort by publish date.
 - `serve` rebuilds the feed and serves `output/` on port 8000. Python's file server doesn't support HTTP range requests, so download episodes in AntennaPod rather than streaming them.
-- Pocket Casts needs public hosting, because it fetches feeds through its own servers. That waits for the hosting layer.
+- **Recommended feed.** [pagecast-podcasts](https://github.com/nahueltaibo/pagecast-podcasts) holds narrated Anthropic articles, served by GitHub Pages at `https://nahueltaibo.github.io/pagecast-podcasts/podcast.xml`. It's a separate repo so plugin installs of this one stay small. Pagecast subscribes to it by default, and settings turn it off.
 
 ## Tooling
 
@@ -62,7 +63,6 @@ Checks `script.json` against [the schema](../src/audio_presenter/schemas/script.
 
 - **Sources.** RSS/Atom, sitemap, and listing-page adapters that find new article URLs. Anthropic research has no feed: `/rss.xml`, `/feed`, and `/feed.xml` all return 404. So it uses the sitemap at `https://www.anthropic.com/sitemap.xml`, filtered to `/research/`, and compares the set of URLs between checks. The `lastmod` dates can't be used because bulk edits give many entries the same timestamp.
 - **Scheduled routine.** A Claude Code cloud routine that runs the same pipeline on new URLs. Kokoro runs on CPU too, so it can run in the cloud.
-- **Hosting.** A private feed you can reach from anywhere.
 - **Own player.** Adds vibration on images and pause-on-media. Built on the same `presentation.json`.
 
 ## Key Decisions

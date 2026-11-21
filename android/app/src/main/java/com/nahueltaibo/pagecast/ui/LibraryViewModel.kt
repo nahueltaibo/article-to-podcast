@@ -12,7 +12,10 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** A row in the library: what the feed offers, what's on the phone, or both. */
-data class EpisodeRow(val id: String, val title: String, val remote: RemoteEpisode?, val local: LocalEpisode?)
+data class EpisodeRow(val id: String, val title: String, val remote: RemoteEpisode?, val local: LocalEpisode?) {
+    val source get() = remote?.source ?: local?.presentation?.source
+    val categories get() = remote?.categories?.takeIf { it.isNotEmpty() } ?: local?.presentation?.categories.orEmpty()
+}
 
 data class LibraryState(
     val feeds: List<String> = emptyList(),
