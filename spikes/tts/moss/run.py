@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 # torchcodec needs shared FFmpeg DLLs; the FFmpeg on PATH is a static build.
-FFMPEG = next((Path(__file__).parent / "ffmpeg-dl").glob("*/bin"))
+FFMPEG = next((Path(os.environ["LOCALAPPDATA"]) / "tts-spike" / "moss" / "ffmpeg").glob("*/bin"))
 os.add_dll_directory(str(FFMPEG))
 os.environ["PATH"] = f"{FFMPEG};{os.environ['PATH']}"
 

@@ -1,47 +1,61 @@
 # /// script
-# requires-python = ">=3.10,<3.11"
-# dependencies = ["boson-multimodal", "soundfile", "numpy", "torch>=2.7", "torchaudio>=2.7", "torchvision"]
+# requires-python = ">=3.12,<3.13"
+# dependencies = ["transformers>=5.3.0", "accelerate", "librosa", "soundfile", "numpy", "torch==2.8.*", "torchaudio==2.8.*"]
 # [tool.uv]
-# override-dependencies = ["torch>=2.7", "torchaudio>=2.7"]
+# override-dependencies = ["torch==2.8.*", "torchaudio==2.8.*"]
 # [tool.uv.sources]
-# boson-multimodal = { path = "repo" }
 # torch = { index = "pytorch-cu128" }
 # torchaudio = { index = "pytorch-cu128" }
-# torchvision = { index = "pytorch-cu128" }
 # [[tool.uv.index]]
 # name = "pytorch-cu128"
 # url = "https://download.pytorch.org/whl/cu128"
 # explicit = true
 # ///
-import base64
+# The HF weights moved to the native transformers format, which the boson_multimodal repo code can't load.
+# torch pinned to 2.8: torchaudio 2.9+ loads audio through torchcodec, which needs shared FFmpeg DLLs.
+import os
 import sys
+import tempfile
 from pathlib import Path
 
+import soundfile as sf
 import torch
-from boson_multimodal.data_types import AudioContent, ChatMLSample, Message
-from boson_multimodal.serve.serve_engine import HiggsAudioServeEngine
+from transformers import AutoProcessor, HiggsAudioV2ForConditionalGeneration
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from common import run  # noqa: E402
 
-PROMPTS = Path(__file__).parent / "repo" / "examples" / "voice_prompts"
-SYSTEM = "Generate audio following instruction.\n\n<|scene_desc_start|>\nAudio is recorded from a quiet room.\n<|scene_desc_end|>"
+REPO = "bosonai/higgs-audio-v2-generation-3B-base"
+# Voice prompts shipped in github.com/boson-ai/higgs-audio, cloned outside the repo.
+PROMPTS = Path(os.environ["LOCALAPPDATA"]) / "tts-spike" / "higgs" / "repo" / "examples" / "voice_prompts"
 
-engine = HiggsAudioServeEngine("bosonai/higgs-audio-v2-generation-3B-base", "bosonai/higgs-audio-v2-tokenizer",
-                               device="cuda")
+processor = AutoProcessor.from_pretrained(REPO, device_map="cuda")
+model = HiggsAudioV2ForConditionalGeneration.from_pretrained(REPO, device_map="cuda", dtype=torch.bfloat16)
+tmp = Path(tempfile.mkdtemp())
+
+
+def turn(role, **content):
+    return {"role": role, "content": [content]}
+
 
 # Clone a shipped voice prompt: without a reference, Higgs picks a new voice for every segment.
 for voice in sys.argv[1:] or ["en_woman", "en_man"]:
     ref_text = (PROMPTS / f"{voice}.txt").read_text(encoding="utf-8").strip()
-    ref_audio = base64.b64encode((PROMPTS / f"{voice}.wav").read_bytes()).decode()
+    prefix = [turn("system", type="text", text="Generate audio following instruction."),
+              turn("scene", type="text", text="Audio is recorded from a quiet room."),
+              turn("user", type="text", text=ref_text),
+              turn("assistant", type="audio", path=str(PROMPTS / f"{voice}.wav"))]
 
-    def synth(text, ref_text=ref_text, ref_audio=ref_audio):
-        messages = [Message(role="system", content=SYSTEM), Message(role="user", content=ref_text),
-                    Message(role="assistant", content=AudioContent(raw_audio=ref_audio, audio_url="placeholder")),
-                    Message(role="user", content=text)]
-        out = engine.generate(chat_ml_sample=ChatMLSample(messages=messages), max_new_tokens=2048, temperature=0.3,
-                              top_p=0.95, top_k=50, stop_strings=["<|end_of_text|>", "<|eot_id|>"], seed=7)
-        return out.audio, out.sampling_rate
+    def synth(text, prefix=prefix):
+        torch.manual_seed(7)
+        inputs = processor.apply_chat_template(prefix + [turn("user", type="text", text=text)],
+                                               add_generation_prompt=True, tokenize=True, return_dict=True,
+                                               sampling_rate=24000, return_tensors="pt").to(model.device)
+        out = model.generate(**inputs, max_new_tokens=2048, do_sample=False)
+        wav = tmp / "seg.wav"
+        processor.save_audio(processor.batch_decode(out), str(wav))
+        audio, sr = sf.read(wav, dtype="float32")
+        return audio, sr
 
     run("higgs2", voice, synth)
 print(f"peak VRAM {torch.cuda.max_memory_allocated() / 2**30:.1f} GiB")

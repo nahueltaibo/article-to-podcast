@@ -4,7 +4,7 @@
 # [tool.uv]
 # override-dependencies = ["torch>=2.7"]
 # [tool.uv.sources]
-# vibevoice = { path = "repo" }
+# vibevoice = { git = "https://github.com/microsoft/VibeVoice", rev = "16fb2cb1217c9934a886e1948ffb06120caa2df5" }
 # torch = { index = "pytorch-cu128" }
 # [[tool.uv.index]]
 # name = "pytorch-cu128"
@@ -12,6 +12,7 @@
 # explicit = true
 # ///
 import copy
+import os
 import sys
 from pathlib import Path
 
@@ -23,7 +24,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from common import run  # noqa: E402
 
 REPO = "microsoft/VibeVoice-Realtime-0.5B"
-VOICES = Path(__file__).parent / "repo" / "demo" / "voices" / "streaming_model"
+STORE = Path(os.environ["LOCALAPPDATA"]) / "tts-spike" / "vibevoice"  # clones and weights live outside the repo
+VOICES = STORE / "repo" / "demo" / "voices" / "streaming_model"
 
 processor = VibeVoiceStreamingProcessor.from_pretrained(REPO)
 # sdpa: no flash-attn wheels for Windows. Upstream says only flash_attention_2 is fully tested.

@@ -2,6 +2,7 @@
 # requires-python = ">=3.10,<3.13"
 # dependencies = ["piper-tts>=1.3", "soundfile", "numpy"]
 # ///
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -12,8 +13,8 @@ from piper import PiperVoice
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from common import run  # noqa: E402
 
-VOICE_DIR = Path(__file__).parent / "voices"
-VOICE_DIR.mkdir(exist_ok=True)
+VOICE_DIR = Path(os.environ["LOCALAPPDATA"]) / "tts-spike" / "piper" / "voices"
+VOICE_DIR.mkdir(parents=True, exist_ok=True)
 
 for name in sys.argv[1:] or ["en_US-lessac-high", "en_GB-alba-medium"]:
     model = VOICE_DIR / f"{name}.onnx"

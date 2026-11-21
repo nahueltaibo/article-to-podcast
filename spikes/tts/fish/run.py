@@ -2,9 +2,9 @@
 # requires-python = ">=3.12,<3.13"
 # dependencies = ["fish-speech", "soundfile", "numpy", "torch==2.8.0", "torchaudio==2.8.0"]
 # [tool.uv]
-# override-dependencies = ["protobuf>=3.20.0,<6.0.0"]
+# override-dependencies = ["protobuf>=6.31.1,<7"]
 # [tool.uv.sources]
-# fish-speech = { path = "repo" }
+# fish-speech = { git = "https://github.com/fishaudio/fish-speech", rev = "0f8a12e8a651062fdee9c33a894bdccd3a8513f1" }
 # torch = { index = "pytorch-cu128" }
 # torchaudio = { index = "pytorch-cu128" }
 # [[tool.uv.index]]
@@ -12,21 +12,23 @@
 # url = "https://download.pytorch.org/whl/cu128"
 # explicit = true
 # ///
+# protobuf: upstream caps it below 6 for descript-audiotools, but the tensorboard it pulls in needs 6.31+.
 import json
+import os
 import sys
 from pathlib import Path
 
 import torch
 
-HERE = Path(__file__).parent
-sys.path.insert(0, str(HERE / "repo"))  # for tools.server, which isn't packaged
-sys.path.insert(0, str(HERE.parent))
+STORE = Path(os.environ["LOCALAPPDATA"]) / "tts-spike" / "fish"  # clones and weights live outside the repo
+sys.path.insert(0, str(STORE / "repo"))  # for tools.server, which isn't packaged
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from common import ROOT, run  # noqa: E402
 from fish_speech.utils.schema import ServeReferenceAudio, ServeTTSRequest  # noqa: E402
 from tools.server.model_manager import ModelManager  # noqa: E402
 
 # Drama 3 needs 48 GB, so this runs S2-Pro (upstream lists 24 GB).
-CKPT = HERE / "checkpoints" / "s2-pro"
+CKPT = STORE / "checkpoints" / "s2-pro"
 # Voice-cloning: the reference is Kokoro af_heart reading segment s1.
 REF = ROOT / "out" / "ref-af_heart-s1.wav"
 REF_TEXT = json.loads((ROOT / "test-script.json").read_text(encoding="utf-8"))["segments"][0]["text"]

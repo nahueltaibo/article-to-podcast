@@ -44,13 +44,14 @@ def decode(codes):
         return snac.decode(layers).squeeze().float().cpu().numpy()
 
 
-for voice in sys.argv[1:] or ["tara", "leo"]:
+for voice in sys.argv[1:] or ["tara"]:
     def synth(text, voice=voice):
         torch.manual_seed(7)
+        # ~84 tokens per audio second; the cap stops runaway generations that never emit END_AUDIO.
         ids = tok(f"{voice}: {text}", return_tensors="pt").input_ids
         ids = torch.cat([torch.tensor([[SOH]]), ids, torch.tensor([[EOT, EOH]])], dim=1).cuda()
         with torch.inference_mode():
-            out = model.generate(ids, attention_mask=torch.ones_like(ids), max_new_tokens=4800, do_sample=True,
+            out = model.generate(ids, attention_mask=torch.ones_like(ids), max_new_tokens=len(text) * 10 + 300, do_sample=True,
                                  temperature=0.6, top_p=0.95, repetition_penalty=1.1, eos_token_id=END_AUDIO)
         gen = out[0, ids.shape[1]:].tolist()
         if START_AUDIO in gen:

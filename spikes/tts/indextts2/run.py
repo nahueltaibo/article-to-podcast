@@ -4,7 +4,7 @@
 # [tool.uv]
 # constraint-dependencies = ["kaldifst==1.7.17"]
 # [tool.uv.sources]
-# indextts = { path = "repo" }
+# indextts = { git = "https://github.com/index-tts/index-tts", rev = "d9e41aac89fd00b3d71497fddb287b7f24613712" }
 # torch = { index = "pytorch-cu128" }
 # torchaudio = { index = "pytorch-cu128" }
 # [[tool.uv.index]]
@@ -13,6 +13,7 @@
 # explicit = true
 # ///
 import json
+import os
 import sys
 import tempfile
 from pathlib import Path
@@ -24,8 +25,8 @@ from indextts.infer_v2 import IndexTTS2
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from common import ROOT, run  # noqa: E402
 
-HERE = Path(__file__).parent
-CKPT = HERE / "checkpoints"
+STORE = Path(os.environ["LOCALAPPDATA"]) / "tts-spike" / "indextts2"  # clones and weights live outside the repo
+CKPT = STORE / "checkpoints"
 # Voice-cloning only: the reference is Kokoro af_heart reading segment s1.
 REF = ROOT / "out" / "ref-af_heart-s1.wav"
 FP16 = "--fp16" in sys.argv
