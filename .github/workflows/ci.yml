@@ -116,11 +116,14 @@ jobs:
           track: internal
           status: completed
       - if: steps.version.outputs.release == 'true'
+        run: cp android/app/build/outputs/bundle/release/app-release.aab "pagecast-${{ steps.version.outputs.version }}.aab"
+      # The homelab runner image has no gh CLI, so the release goes through an action instead.
+      - if: steps.version.outputs.release == 'true'
         name: Tag and publish the GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
-        run: |
-          cp android/app/build/outputs/bundle/release/app-release.aab "pagecast-$VERSION.aab"
-          gh release create "v$VERSION" "pagecast-$VERSION.aab" \
-            --target "$GITHUB_SHA" --title "Pagecast $VERSION" --generate-notes
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Pagecast ${{ steps.version.outputs.version }}
+          files: pagecast-${{ steps.version.outputs.version }}.aab
+          generate_release_notes: true
