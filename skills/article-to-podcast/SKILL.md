@@ -12,7 +12,7 @@ Run every command as `uv run --project "${CLAUDE_PLUGIN_ROOT}" audio-presenter <
 
 ## Steps
 
-1. `audio-presenter extract <url>`. It prints the episode folder, for example `output/episodes/2026-03-24-harness-design-long-running-apps`.
+1. `audio-presenter extract <url>`. Add `--source <publisher>` and `--category <area>` when you know where the article comes from, so the app can filter by them. It prints the episode folder, for example `output/episodes/2026-03-24-harness-design-long-running-apps`.
 2. Read `article.json` in that folder.
 3. Open every still in `media/` with the Read tool. You can't describe an image you haven't looked at.
 4. Write `script.json` in the episode folder, following the rules below.
