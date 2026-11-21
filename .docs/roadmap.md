@@ -29,6 +29,7 @@ Images change in sync in AntennaPod. But AntennaPod draws chapter art as a squar
 - Tapping shows the controls over the image: seek bar, back and forward 30 seconds, chapter list. They fade after 4 seconds of playback.
 - A settings screen turns the chime on new media on or off, and the recommended feed.
 - The recommended feed is on by default. Episodes show their source and area, and chips filter by area.
+- Continue listening lists started episodes at the top. Chips filter by downloaded, by the last 1, 7, or 30 days, and by area, and a menu sorts by newest, oldest, or title. Each episode shows its date and length.
 
 Not yet: vibration on new images, pause-on-media, zoom, a transcript, deleting old episodes automatically.
 
