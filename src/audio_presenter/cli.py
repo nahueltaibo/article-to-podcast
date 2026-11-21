@@ -1,14 +1,17 @@
-"""Command line entry point: extract, validate, build, feed, serve."""
+"""Command line entry point: extract, validate, build, feed, serve, publish."""
 import argparse
 import functools
 import http.server
 import socket
+import subprocess
 from pathlib import Path
 
-from . import extract, feed, package, render, validate
+from . import extract, feed, package, publish, render, validate
 
 OUTPUT = Path("output")
 PORT = 8000
+SITE = Path("../pagecast-feed")
+SITE_URL = "https://nahueltaibo.github.io/pagecast-feed"
 
 
 def lan_ip() -> str:
@@ -35,6 +38,9 @@ def main() -> None:
     p = sub.add_parser("feed", help="write podcast.xml and chapters.json files")
     p.add_argument("--base-url", default=None, help=f"default: http://<LAN IP>:{PORT}")
     sub.add_parser("serve", help=f"rebuild the feed and serve output/ on port {PORT}")
+    p = sub.add_parser("publish", help="copy episodes into the GitHub Pages feed repo, then commit and push")
+    p.add_argument("--site", type=Path, default=SITE, help=f"a clone of the feed repo, default: {SITE}")
+    p.add_argument("--base-url", default=SITE_URL)
     args = parser.parse_args()
 
     if args.command == "extract":
@@ -57,3 +63,11 @@ def main() -> None:
         print(f"Subscribe in AntennaPod to: {base}/podcast.xml  (Ctrl+C to stop)")
         handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(OUTPUT))
         http.server.ThreadingHTTPServer(("0.0.0.0", PORT), handler).serve_forever()
+    elif args.command == "publish":
+        print(publish.run(OUTPUT, args.site, args.base_url))
+        git = ["git", "-C", str(args.site)]
+        subprocess.run(git + ["add", "-A"], check=True)
+        if subprocess.run(git + ["diff", "--cached", "--quiet"]).returncode:
+            subprocess.run(git + ["commit", "-q", "-m", "Publish episodes"], check=True)
+            subprocess.run(git + ["push", "-q"], check=True)
+        print(f"Feed: {args.base_url}/podcast.xml (Pages takes a minute or two to deploy)")
