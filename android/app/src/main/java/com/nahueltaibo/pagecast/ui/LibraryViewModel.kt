@@ -15,12 +15,15 @@ import kotlinx.coroutines.launch
 data class EpisodeRow(val id: String, val title: String, val remote: RemoteEpisode?, val local: LocalEpisode?) {
     val source get() = remote?.source ?: local?.presentation?.source
     val categories get() = remote?.categories?.takeIf { it.isNotEmpty() } ?: local?.presentation?.categories.orEmpty()
+    val publishedAt get() = remote?.publishedAt ?: local?.presentation?.publishedAt
+    val durationMs get() = local?.presentation?.durationMs ?: remote?.durationMs
 }
 
 data class LibraryState(
     val feeds: List<String> = emptyList(),
     val rows: List<EpisodeRow> = emptyList(),
     val downloads: Map<String, Float> = emptyMap(),
+    val filter: LibraryFilter = LibraryFilter(),
     val refreshing: Boolean = false,
     val error: String? = null,
 )
@@ -71,6 +74,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun clearError() = _state.update { it.copy(error = null) }
+
+    fun setFilter(filter: LibraryFilter) = _state.update { it.copy(filter = filter) }
 
     private fun rebuildRows() {
         val local = library.downloaded().associateBy { it.id }
