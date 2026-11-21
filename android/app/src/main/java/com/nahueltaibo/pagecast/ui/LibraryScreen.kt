@@ -226,7 +226,7 @@ private fun EpisodeItem(
                     }
                 }
             }
-            else -> { { Text(formatTime(local.presentation.durationMs)) } }
+            else -> null
         },
         trailingContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -245,10 +245,16 @@ private fun EpisodeItem(
     )
 }
 
-/** "Anthropic · Science · Nov 17, 2026", or null for an episode with no tags or date. */
+/** "Anthropic · Science · Nov 17, 2026 · 31 min", or null for an episode with nothing to show. */
 private fun tagLine(row: EpisodeRow): String? =
-    (listOfNotNull(row.source) + row.categories + listOfNotNull(row.publishedAt?.format(dateFormat)))
+    (listOfNotNull(row.source) + row.categories + listOfNotNull(row.publishedAt?.format(dateFormat), row.durationMs?.let(::durationLabel)))
         .joinToString(" · ").ifEmpty { null }
+
+/** Rounded the way podcast apps list episodes: "45 min", "1 h 5 min". */
+fun durationLabel(ms: Long): String {
+    val minutes = ((ms + 30_000) / 60_000).coerceAtLeast(1)
+    return if (minutes < 60) "$minutes min" else if (minutes % 60 == 0L) "${minutes / 60} h" else "${minutes / 60} h ${minutes % 60} min"
+}
 
 @Composable
 private fun AddFeedDialog(onAdd: (String) -> Unit, onDismiss: () -> Unit) {

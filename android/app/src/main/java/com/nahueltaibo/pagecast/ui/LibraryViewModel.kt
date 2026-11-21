@@ -16,6 +16,7 @@ data class EpisodeRow(val id: String, val title: String, val remote: RemoteEpiso
     val source get() = remote?.source ?: local?.presentation?.source
     val categories get() = remote?.categories?.takeIf { it.isNotEmpty() } ?: local?.presentation?.categories.orEmpty()
     val publishedAt get() = remote?.publishedAt ?: local?.presentation?.publishedAt
+    val durationMs get() = local?.presentation?.durationMs ?: remote?.durationMs
 }
 
 data class LibraryState(

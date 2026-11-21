@@ -19,6 +19,7 @@ data class RemoteEpisode(
     val source: String? = null,
     val categories: List<String> = emptyList(),
     val publishedAt: LocalDate? = null,
+    val durationMs: Long? = null,
 )
 
 /** An episode fully downloaded to [dir]. */
