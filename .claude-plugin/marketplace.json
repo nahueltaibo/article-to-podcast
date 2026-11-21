@@ -1,0 +1,14 @@
+{
+  "name": "pagecast",
+  "owner": {
+    "name": "Nahuel Taibo"
+  },
+  "description": "Claude Code plugins for turning articles into podcast episodes.",
+  "plugins": [
+    {
+      "name": "pagecast",
+      "source": "./",
+      "description": "Turn an article URL into a podcast episode: local TTS narration with the article's images as chapter art."
+    }
+  ]
+}
