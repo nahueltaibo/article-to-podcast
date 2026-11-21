@@ -26,6 +26,8 @@ import com.nahueltaibo.pagecast.playback.PlaybackService
 import com.nahueltaibo.pagecast.ui.LibraryScreen
 import com.nahueltaibo.pagecast.ui.LibraryViewModel
 import com.nahueltaibo.pagecast.ui.PlayerScreen
+import com.nahueltaibo.pagecast.ui.SettingsScreen
+import com.nahueltaibo.pagecast.data.Settings
 
 class MainActivity : ComponentActivity() {
     private val viewModel: LibraryViewModel by viewModels()
@@ -42,9 +44,12 @@ class MainActivity : ComponentActivity() {
                 val state by viewModel.state.collectAsStateWithLifecycle()
                 val controller = rememberMediaController()
                 var openId by rememberSaveable { mutableStateOf<String?>(null) }
+                var settingsOpen by rememberSaveable { mutableStateOf(false) }
                 val open = openId?.let { id -> state.rows.firstOrNull { it.id == id }?.local }
 
-                if (open != null && controller != null) {
+                if (settingsOpen) {
+                    SettingsScreen(settings = remember { Settings(applicationContext) }, onClose = { settingsOpen = false })
+                } else if (open != null && controller != null) {
                     PlayerScreen(
                         episode = open,
                         controller = controller,
@@ -60,6 +65,7 @@ class MainActivity : ComponentActivity() {
                         onDelete = viewModel::delete,
                         onOpen = { openId = it.id },
                         onDismissError = viewModel::clearError,
+                        onSettings = { settingsOpen = true },
                         resumeAt = viewModel.library::position,
                     )
                 }

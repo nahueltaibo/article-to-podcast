@@ -60,6 +60,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
+import androidx.core.os.bundleOf
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
@@ -70,6 +71,8 @@ import coil.decode.GifDecoder
 import coil.decode.ImageDecoderDecoder
 import com.nahueltaibo.pagecast.data.Library
 import com.nahueltaibo.pagecast.data.LocalEpisode
+import com.nahueltaibo.pagecast.playback.CHIME_AT_MS
+import com.nahueltaibo.pagecast.playback.CHIME_FILE
 import kotlinx.coroutines.delay
 
 private const val CONTROLS_TIMEOUT_MS = 4_000L
@@ -87,10 +90,16 @@ fun PlayerScreen(episode: LocalEpisode, controller: MediaController, library: Li
                 .setTitle(presentation.title)
                 .setArtist(presentation.site)
                 .apply { presentation.cover?.let { setArtworkUri(Uri.fromFile(episode.file(it))) } }
+                .setExtras(
+                    bundleOf(
+                        CHIME_AT_MS to presentation.chimeAtMs.toLongArray(),
+                        CHIME_FILE to presentation.chimeFile?.let { episode.file(it).path },
+                    ),
+                )
                 .build()
             val item = MediaItem.Builder()
                 .setMediaId(episode.id)
-                .setUri(Uri.fromFile(episode.file(presentation.audioFile)))
+                .setUri(Uri.fromFile(episode.file(presentation.playbackFile)))
                 .setMediaMetadata(metadata)
                 .build()
             controller.setMediaItem(item, library.position(episode.id))

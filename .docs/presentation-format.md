@@ -14,6 +14,8 @@ output/
       script.json
       presentation.json
       audio.mp3
+      narration.mp3
+      chime.wav
       chapters.json
       cover.jpg
       media/
@@ -28,6 +30,7 @@ output/
 | `script.json` | Claude | Episode description and narration segments, no timings |
 | `presentation.json` | `build` | Segments with timings, the media shown, chapters |
 | `audio.mp3` | `build` | Narration plus chimes, with embedded ID3 chapters and images |
+| `narration.mp3`, `chime.wav` | `build` | The same audio with silence in place of each chime, and the chime alone, so Pagecast can make the chime optional |
 | `chapters.json` | `feed` | Podcasting 2.0 chapters with absolute image URLs |
 | `podcast.xml` | `feed` | Feed listing every built episode, newest first |
 
@@ -63,7 +66,7 @@ The contract between Claude and the pipeline. The schema is [script.schema.json]
   "description": "...",
   "generatedAt": "2026-11-20T19:07:02+00:00",
   "voice": { "engine": "kokoro", "voice": "af_heart" },
-  "audio": { "file": "audio.mp3", "durationMs": 2054125 },
+  "audio": { "file": "audio.mp3", "narrationFile": "narration.mp3", "chimeFile": "chime.wav", "durationMs": 2054125 },
   "cover": "cover.jpg",
   "segments": [
     { "id": "s1", "kind": "title", "text": "...", "startMs": 0, "endMs": 11900 }
@@ -80,6 +83,7 @@ The contract between Claude and the pipeline. The schema is [script.schema.json]
 - `segments` cover the audio end to end, in order, with no gaps. A segment's range includes its chime and the pause after it.
 - `media[].type` is `image`, `animation` (a GIF or looping video), `video`, or `embed`.
 - An `animation` also has `animatedFile`, a GIF that Pagecast plays in place of the still. Looping videos are converted to 720 px, 12 fps GIFs.
+- `narration.mp3` shares `audio.mp3`'s timeline, so every timing applies to both. Pagecast plays it and adds the chime at each segment with media, unless the listener turns the chime off. Older episodes without `narrationFile` play `audio.mp3`, chime included.
 - A breaking change bumps `formatVersion`.
 
 ## Chapters

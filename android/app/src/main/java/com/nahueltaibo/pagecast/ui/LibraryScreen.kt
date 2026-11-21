@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -49,6 +50,7 @@ fun LibraryScreen(
     onDelete: (LocalEpisode) -> Unit,
     onOpen: (LocalEpisode) -> Unit,
     onDismissError: () -> Unit,
+    onSettings: () -> Unit,
     resumeAt: (String) -> Long,
 ) {
     var adding by remember { mutableStateOf(false) }
@@ -60,6 +62,7 @@ fun LibraryScreen(
                     if (state.refreshing) CircularProgressIndicator(Modifier.size(24.dp))
                     else IconButton(onClick = onRefresh) { Icon(Icons.Default.Refresh, "Refresh") }
                     IconButton(onClick = { adding = true }) { Icon(Icons.Default.Add, "Add podcast") }
+                    IconButton(onClick = onSettings) { Icon(Icons.Default.Settings, "Settings") }
                 },
             )
         },

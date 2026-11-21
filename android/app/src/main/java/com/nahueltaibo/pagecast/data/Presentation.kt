@@ -11,6 +11,8 @@ data class Presentation(
     val articleUrl: String,
     val durationMs: Long,
     val audioFile: String,
+    val narrationFile: String?,
+    val chimeFile: String?,
     val cover: String?,
     val segments: List<Segment>,
     val media: Map<String, Media>,
@@ -20,9 +22,17 @@ data class Presentation(
     data class Media(val file: String?, val animatedFile: String?, val caption: String?)
     data class Chapter(val startMs: Long, val title: String, val image: String?)
 
+    /** Older episodes have only audio.mp3, with the chime mixed in. */
+    val playsOwnChime get() = narrationFile != null && chimeFile != null
+
+    val playbackFile get() = if (playsOwnChime) narrationFile!! else audioFile
+
+    /** Where the chime belongs: the start of every segment that brings new media. */
+    val chimeAtMs get() = if (playsOwnChime) segments.filter { it.media != null }.map { it.startMs } else emptyList()
+
     /** Every file the episode needs offline. */
     fun files(): List<String> =
-        (listOf(audioFile) + listOfNotNull(cover) +
+        (listOf(playbackFile) + listOfNotNull(chimeFile.takeIf { playsOwnChime }, cover) +
             media.values.flatMap { listOfNotNull(it.file, it.animatedFile) } +
             chapters.mapNotNull { it.image }).distinct()
 
@@ -51,6 +61,8 @@ data class Presentation(
                 articleUrl = article.getString("url"),
                 durationMs = audio.getLong("durationMs"),
                 audioFile = audio.getString("file"),
+                narrationFile = audio.optNullableString("narrationFile"),
+                chimeFile = audio.optNullableString("chimeFile"),
                 cover = root.optNullableString("cover"),
                 segments = root.getJSONArray("segments").objects().map {
                     Segment(it.getLong("startMs"), it.optNullableString("media"))

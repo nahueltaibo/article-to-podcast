@@ -27,6 +27,7 @@ Images change in sync in AntennaPod. But AntennaPod draws chapter art as a squar
 - Play, pause, stop, and resume where you left off. Playback continues in the background, with lock screen and Bluetooth controls.
 - The current image fills the screen, and GIFs animate.
 - Tapping shows the controls over the image: seek bar, back and forward 30 seconds, chapter list. They fade after 4 seconds of playback.
+- A settings screen turns the chime on new media on or off.
 
 Not yet: vibration on new images, pause-on-media, zoom, a transcript, deleting old episodes automatically.
 

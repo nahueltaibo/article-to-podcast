@@ -51,4 +51,18 @@ class PresentationTest {
             presentation.files(),
         )
     }
+
+    @Test
+    fun episodesWithANarrationTrackPlayItAndTheChimeSeparately() {
+        val split = Presentation.parse(
+            json.replace(
+                "\"file\": \"audio.mp3\"",
+                "\"file\": \"audio.mp3\", \"narrationFile\": \"narration.mp3\", \"chimeFile\": \"chime.wav\"",
+            ),
+        )
+        assertEquals("narration.mp3", split.playbackFile)
+        assertEquals(listOf(2000L, 7000L), split.chimeAtMs)
+        assertEquals(listOf("narration.mp3", "chime.wav"), split.files().take(2))
+        assertEquals(emptyList<Long>(), presentation.chimeAtMs)
+    }
 }
