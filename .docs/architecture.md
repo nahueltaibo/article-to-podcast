@@ -9,7 +9,8 @@ flowchart TD
     N --> V[validate]
     V --> B[build<br/>Kokoro per segment + chime → audio.mp3<br/>ID3 chapters with images]
     B --> F[feed<br/>podcast.xml + chapters.json]
-    F --> S[serve on the LAN] --> A[AntennaPod]
+    F --> S[serve on the LAN] --> A[Pagecast or<br/>AntennaPod]
+    B --> P[publish<br/>GitHub Pages] --> A
 ```
 
 Claude only does the step that needs judgment: writing the narration. Everything else is the `audio-presenter` CLI in [src/audio_presenter](../src/audio_presenter). The [article-to-podcast skill](../.claude/skills/article-to-podcast/SKILL.md) runs the whole flow and holds the narration rules.
@@ -42,11 +43,12 @@ Checks `script.json` against [the schema](../src/audio_presenter/schemas/script.
 - **Encode.** ffmpeg normalizes loudness to −16 LUFS and writes a 96 kbps mono MP3. Segment times come from the clip lengths, and get written to `presentation.json`.
 - **Package.** Builds the chapters and embeds them as ID3v2.3 `CHAP` and `CTOC` frames, each with its image, using mutagen.
 
-### feed and serve
+### feed, serve, and publish
 
 - `feed` writes `podcast.xml` and each episode's `chapters.json`, with absolute URLs for the LAN address.
 - `serve` rebuilds the feed and serves `output/` on port 8000. Python's file server doesn't support HTTP range requests, so download episodes in AntennaPod rather than streaming them.
-- Pocket Casts needs public hosting, because it fetches feeds through its own servers. That waits for the hosting layer.
+- `publish` copies the files listeners need into a clone of the public [pagecast-feed](https://github.com/nahueltaibo/pagecast-feed) repo at `../pagecast-feed`, writes the feed with its GitHub Pages URLs, then commits and pushes. The feed is https://nahueltaibo.github.io/pagecast-feed/podcast.xml and works from anywhere, Pocket Casts included.
+- Everything published is public, and git keeps every episode in history, so the repo only grows. GitHub Pages caps a site at 1 GB.
 
 ## Tooling
 
@@ -62,7 +64,6 @@ Checks `script.json` against [the schema](../src/audio_presenter/schemas/script.
 
 - **Sources.** RSS/Atom, sitemap, and listing-page adapters that find new article URLs. Anthropic research has no feed: `/rss.xml`, `/feed`, and `/feed.xml` all return 404. So it uses the sitemap at `https://www.anthropic.com/sitemap.xml`, filtered to `/research/`, and compares the set of URLs between checks. The `lastmod` dates can't be used because bulk edits give many entries the same timestamp.
 - **Scheduled routine.** A Claude Code cloud routine that runs the same pipeline on new URLs. Kokoro runs on CPU too, so it can run in the cloud.
-- **Hosting.** A private feed you can reach from anywhere.
 - **Own player.** Adds vibration on images and pause-on-media. Built on the same `presentation.json`.
 
 ## Key Decisions
