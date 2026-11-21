@@ -75,7 +75,11 @@ class MainActivity : ComponentActivity() {
                 } else {
                     LibraryScreen(
                         state = state,
-                        onAddFeed = viewModel::addFeed,
+                        onAddFeed = viewModel::addFeed,
+                        onUseRecommended = {
+                            settings.recommendedFeed = true
+                            viewModel.refresh()
+                        },
                         onRefresh = viewModel::refresh,
                         onDownload = viewModel::download,
                         onDelete = viewModel::delete,
