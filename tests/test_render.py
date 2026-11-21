@@ -15,3 +15,14 @@ def test_narration_keeps_the_timeline_but_silences_the_chime():
     assert full[start:start + 100].tolist() == [1.0] * 100
     assert not narration[start:start + 100].any()
     assert np.array_equal(full[:start], narration[:start])
+
+
+def test_duration_reads_ffmpeg_summary(tmp_path):
+    import subprocess
+
+    from audio_presenter import tools
+
+    clip = tmp_path / "clip.mp4"
+    subprocess.run([tools.ffmpeg(), "-y", "-loglevel", "error", "-f", "lavfi", "-i", "testsrc=d=2.5:s=64x64", str(clip)],
+                   check=True)
+    assert abs(tools.duration(str(clip)) - 2.5) < 0.1
