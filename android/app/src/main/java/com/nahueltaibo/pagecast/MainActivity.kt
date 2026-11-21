@@ -69,7 +69,9 @@ class MainActivity : ComponentActivity() {
                         onOpen = { openId = it.id },
                         onDismissError = viewModel::clearError,
                         onSettings = { settingsOpen = true },
+                        onFilter = viewModel::setFilter,
                         resumeAt = viewModel.library::position,
+                        lastPlayed = viewModel.library::lastPlayed,
                     )
                 }
             }

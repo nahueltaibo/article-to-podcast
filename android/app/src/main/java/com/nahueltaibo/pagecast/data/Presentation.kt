@@ -2,6 +2,7 @@ package com.nahueltaibo.pagecast.data
 
 import org.json.JSONArray
 import org.json.JSONObject
+import java.time.LocalDate
 
 /** One narrated article, as described by the pipeline's presentation.json. Paths are relative to the episode. */
 data class Presentation(
@@ -19,6 +20,7 @@ data class Presentation(
     val chapters: List<Chapter>,
     val source: String? = null,
     val categories: List<String> = emptyList(),
+    val publishedAt: LocalDate? = null,
 ) {
     data class Segment(val startMs: Long, val media: String?)
     data class Media(val file: String?, val animatedFile: String?, val caption: String?)
@@ -80,6 +82,7 @@ data class Presentation(
                     Chapter(it.getLong("startMs"), it.getString("title"), it.optNullableString("image"))
                 }.orEmpty(),
                 source = root.optNullableString("source"),
+                publishedAt = article.optNullableString("publishedAt")?.let { runCatching { LocalDate.parse(it) }.getOrNull() },
                 categories = root.optJSONArray("categories")?.let { a -> (0 until a.length()).map { a.getString(it) } }.orEmpty(),
             )
         }

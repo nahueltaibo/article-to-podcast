@@ -13,6 +13,7 @@ class FeedParserTest {
           <item>
            <title>Tagged</title>
            <guid isPermaLink="false">ep1</guid>
+           <pubDate>Tue, 17 Nov 2026 00:00:00 +0000</pubDate>
            <category>Science</category>
            <category>Economics</category>
            <pagecast:source>Anthropic</pagecast:source>
@@ -41,6 +42,12 @@ class FeedParserTest {
     fun readsSourceAndCategories() {
         assertEquals("Anthropic", episodes[0].source)
         assertEquals(listOf("Science", "Economics"), episodes[0].categories)
+    }
+
+    @Test
+    fun readsPublishDateAndToleratesItsAbsence() {
+        assertEquals(java.time.LocalDate.of(2026, 11, 17), episodes[0].publishedAt)
+        assertEquals(null, episodes[1].publishedAt)
     }
 
     @Test

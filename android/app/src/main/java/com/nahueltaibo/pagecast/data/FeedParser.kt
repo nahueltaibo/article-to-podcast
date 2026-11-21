@@ -1,6 +1,10 @@
 package com.nahueltaibo.pagecast.data
 
 import org.xmlpull.v1.XmlPullParser
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 /** Reads the Pagecast episodes out of an RSS feed. Takes the parser so JVM tests can supply one. */
 object FeedParser {
@@ -15,17 +19,19 @@ object FeedParser {
         var guid = ""
         var presentation: String? = null
         var source: String? = null
+        var published: LocalDate? = null
         val categories = mutableListOf<String>()
         var inItem = false
         while (parser.next() != XmlPullParser.END_DOCUMENT) {
             when (parser.eventType) {
                 XmlPullParser.START_TAG -> if (parser.name == "item") {
-                    inItem = true; title = ""; guid = ""; presentation = null; source = null; categories.clear()
+                    inItem = true; title = ""; guid = ""; presentation = null; source = null; published = null; categories.clear()
                 } else if (inItem) {
                     val pagecast = parser.namespace == PAGECAST_NS
                     when {
                         parser.name == "title" && !pagecast -> title = parser.nextText()
                         parser.name == "guid" -> guid = parser.nextText()
+                        parser.name == "pubDate" -> published = parseDate(parser.nextText())
                         parser.name == "category" && !pagecast -> categories += parser.nextText().trim()
                         parser.name == "source" && pagecast -> source = parser.nextText().trim()
                         parser.name == "presentation" && pagecast -> presentation = parser.getAttributeValue(null, "url")
@@ -34,10 +40,15 @@ object FeedParser {
                 XmlPullParser.END_TAG -> if (parser.name == "item") {
                     inItem = false
                     // Items without a presentation are plain podcast episodes, which Pagecast can't show yet.
-                    presentation?.let { episodes += RemoteEpisode(guid.ifEmpty { it }, title, it, source, categories.toList()) }
+                    presentation?.let { episodes += RemoteEpisode(guid.ifEmpty { it }, title, it, source, categories.toList(), published) }
                 }
             }
         }
         return episodes
     }
+
+    /** RSS dates look like "Tue, 17 Nov 2026 00:00:00 +0000". A bad date shouldn't drop the episode. */
+    private fun parseDate(text: String): LocalDate? = runCatching {
+        ZonedDateTime.parse(text.trim(), DateTimeFormatter.RFC_1123_DATE_TIME).withZoneSameInstant(ZoneOffset.UTC).toLocalDate()
+    }.getOrNull()
 }

@@ -8,6 +8,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
 import java.io.IOException
+import java.time.LocalDate
 import java.util.concurrent.TimeUnit
 
 /** An episode listed in a feed. [categories] are the areas it came from, such as Science. */
@@ -17,6 +18,7 @@ data class RemoteEpisode(
     val presentationUrl: String,
     val source: String? = null,
     val categories: List<String> = emptyList(),
+    val publishedAt: LocalDate? = null,
 )
 
 /** An episode fully downloaded to [dir]. */
@@ -48,8 +50,11 @@ class Library(context: Context) {
 
     fun position(id: String): Long = prefs.getLong("position:$id", 0)
 
+    /** When the episode last played, for ordering Continue listening. */
+    fun lastPlayed(id: String): Long = prefs.getLong("played:$id", 0)
+
     fun savePosition(id: String, ms: Long) {
-        prefs.edit().putLong("position:$id", ms).apply()
+        prefs.edit().putLong("position:$id", ms).putLong("played:$id", System.currentTimeMillis()).apply()
     }
 
     /** presentation.json is written last, so its presence means every file arrived. */
@@ -90,7 +95,7 @@ class Library(context: Context) {
 
     fun delete(episode: LocalEpisode) {
         episode.dir.deleteRecursively()
-        prefs.edit().remove("position:${episode.id}").apply()
+        prefs.edit().remove("position:${episode.id}").remove("played:${episode.id}").apply()
     }
 
     private fun get(url: String): String =
