@@ -19,7 +19,7 @@ flowchart TD
 | Android build and test | PRs and main | `lintDebug`, `testDebugUnitTest`, `assembleDebug` |
 | Release to Google Play | main, after both pass | See below |
 
-Jobs run on the homelab runner when the repo's `CI_RUNNER` variable is `homelab-ci`, and on GitHub-hosted runners otherwise. The runner takes one job at a time, so a run's jobs queue behind each other. See the [homelab runner docs](https://github.com/nahueltaibo/homelab/blob/main/docs/bootstrap.md#13-ci-runners-for-private-repos).
+Jobs run on the homelab runner when the repo's `CI_RUNNER` variable is `homelab-ci`, and on GitHub-hosted runners otherwise. Pull requests from forks always run on GitHub-hosted runners, so outside code never reaches the homelab. The runner takes one job at a time, so a run's jobs queue behind each other. See the [homelab runner docs](https://github.com/nahueltaibo/homelab/blob/main/docs/bootstrap.md#13-ci-runners-for-private-repos).
 
 ## Releasing
 

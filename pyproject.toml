@@ -2,6 +2,7 @@
 name = "audio-presenter"
 version = "0.1.0"
 description = "Turns an article URL into a podcast episode with narration and chapter images in sync."
+license = "MIT"
 requires-python = ">=3.12,<3.13"
 dependencies = [
   "beautifulsoup4>=4.12",
