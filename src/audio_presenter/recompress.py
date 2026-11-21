@@ -3,14 +3,14 @@ import json
 import subprocess
 from pathlib import Path
 
-from . import package
+from . import package, tools
 from .render import MP3_BITRATE, SAMPLE_RATE
 
 
 def reencode(src: Path) -> None:
     tmp = src.with_suffix(".tmp.mp3")
     # Drop old tags and cover art. The chapters are embedded again afterwards.
-    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src), "-map", "0:a", "-map_metadata", "-1",
+    subprocess.run([tools.ffmpeg(), "-y", "-loglevel", "error", "-i", str(src), "-map", "0:a", "-map_metadata", "-1",
                     "-ar", str(SAMPLE_RATE), "-ac", "1", "-b:a", MP3_BITRATE, str(tmp)], check=True)
     tmp.replace(src)
 

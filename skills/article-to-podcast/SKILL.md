@@ -1,14 +1,16 @@
 ---
 name: article-to-podcast
 description: Turn an article URL into a podcast episode with narration and chapter images in sync. Use when the user gives an article URL and wants it as a podcast episode, or says /article-to-podcast <url>.
-allowed-tools: Bash(uv run --project "${CLAUDE_PLUGIN_ROOT}" audio-presenter *)
+allowed-tools: Bash(uv run --no-sync --project "${CLAUDE_PLUGIN_ROOT}" audio-presenter *)
 ---
 
 # Article to Podcast
 
 You do one thing the scripts can't: write the narration. Everything else is a command.
 
-Run every command as `uv run --project "${CLAUDE_PLUGIN_ROOT}" audio-presenter <command>`, shortened to `audio-presenter` below. Episodes and the feed go to `output/` in the current folder, or to `AUDIO_PRESENTER_OUTPUT` when it's set. If a command fails with a missing ffmpeg, torch, or Kokoro, run the `setup` skill first.
+Run every command as `uv run --no-sync --project "${CLAUDE_PLUGIN_ROOT}" audio-presenter <command>`, shortened to `audio-presenter` below. Episodes and the feed go to `output/` in the current folder, or to `AUDIO_PRESENTER_OUTPUT` when it's set.
+
+If the first command fails because the environment isn't installed (no `.venv`, `audio-presenter` not found, or a missing torch or Kokoro), follow the `setup` skill, then carry on from step 1. Don't send the user off to run it themselves.
 
 ## Steps
 
@@ -19,7 +21,12 @@ Run every command as `uv run --project "${CLAUDE_PLUGIN_ROOT}" audio-presenter <
 5. `audio-presenter validate <folder>`. Fix every error. Each warning means an image is never shown, so make sure skipping it was deliberate.
 6. `audio-presenter build <folder>`. It renders the audio and embeds the chapters.
 7. `audio-presenter feed`.
-8. Tell the user the episode length and chapter count. If the server isn't running, offer to start `audio-presenter serve` in the background. Then tell them to subscribe in AntennaPod to the URL it prints.
+8. Start `audio-presenter serve --open` in the background. If it's already running, it says so and only refreshes the feed. `--open` shows the subscribe page in this computer's browser: a QR code, a link to install the app, and an **Add to Pagecast** button.
+9. Tell the user the episode length and chapter count, then what to do:
+   - First time: scan the QR code on the page with the phone, on the same Wi-Fi. The page installs Pagecast and adds the feed with one tap.
+   - Already subscribed: tap refresh in Pagecast.
+   - The computer has to stay on and awake while the phone downloads the episode. After that it plays offline.
+   - If the phone can't open the page, the firewall is probably blocking port 8000. Say so, and ask before adding a firewall rule.
 
 ## script.json
 

@@ -74,6 +74,7 @@ private val dateFormat = DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
 fun LibraryScreen(
     state: LibraryState,
     onAddFeed: (String) -> Unit,
+    onDismissPendingFeed: () -> Unit,
     onUseRecommended: () -> Unit,
     onRefresh: () -> Unit,
     onDownload: (RemoteEpisode) -> Unit,
@@ -158,6 +159,10 @@ fun LibraryScreen(
     }
 
     if (adding) AddSourceSheet(onAdd = { onAddFeed(it); adding = false }, onDismiss = { adding = false })
+    // A web page can open the link, so the listener confirms the feed before it's added.
+    state.pendingFeed?.let { feed ->
+        AddSourceSheet(initial = feed, onAdd = onAddFeed, onDismiss = onDismissPendingFeed)
+    }
     state.error?.let { message ->
         ErrorDialog(message, onRetry = { onDismissError(); onRefresh() }, onDismiss = onDismissError)
     }
@@ -378,8 +383,8 @@ fun durationLabel(ms: Long): String {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AddSourceSheet(onAdd: (String) -> Unit, onDismiss: () -> Unit) {
-    var url by remember { mutableStateOf("") }
+private fun AddSourceSheet(onAdd: (String) -> Unit, onDismiss: () -> Unit, initial: String = "") {
+    var url by remember(initial) { mutableStateOf(initial) }
     val clipboard = LocalClipboardManager.current
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp).padding(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {

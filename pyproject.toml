@@ -11,6 +11,8 @@ dependencies = [
   "mutagen>=1.47",
   "numpy>=1.26",
   "pillow>=10.4",
+  "segno>=1.6",
+  "imageio-ffmpeg>=0.6",
   "soundfile>=0.12",
 ]
 
@@ -22,14 +24,17 @@ dev = ["pytest>=8"]
 # Only `build` needs these. CI skips them, since PyTorch alone is gigabytes.
 tts = [
   "kokoro>=0.9.4",
-  "torch>=2.7",
   # misaki tries to pip-install the spaCy model at runtime; pinning it avoids that.
   "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl",
   "pip",
 ]
+# Pick one PyTorch build. Setup syncs `cpu` on machines without an NVIDIA GPU, which skips about 3 GB of CUDA.
+cuda = ["torch>=2.7"]
+cpu = ["torch>=2.7"]
 
 [tool.uv]
-default-groups = ["dev", "tts"]
+default-groups = ["dev", "tts", "cuda"]
+conflicts = [[{ group = "cuda" }, { group = "cpu" }]]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -43,10 +48,18 @@ allow-direct-references = true
 
 [tool.uv.sources]
 # macOS has no CUDA builds, so it takes PyTorch from PyPI.
-torch = [{ index = "pytorch-cu128", marker = "sys_platform != 'darwin'" }]
+torch = [
+  { index = "pytorch-cu128", group = "cuda", marker = "sys_platform != 'darwin'" },
+  { index = "pytorch-cpu", group = "cpu", marker = "sys_platform != 'darwin'" },
+]
 
 [[tool.uv.index]]
 # RTX 50-series GPUs need CUDA 12.8+ builds of PyTorch.
 name = "pytorch-cu128"
 url = "https://download.pytorch.org/whl/cu128"
+explicit = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
 explicit = true

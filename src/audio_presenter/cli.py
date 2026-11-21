@@ -3,11 +3,11 @@ import argparse
 import functools
 import http.server
 import os
-import shutil
 import socket
+import webbrowser
 from pathlib import Path
 
-from . import extract, feed, package, publish, recompress, render, validate
+from . import extract, feed, package, publish, recompress, render, subscribe, tools, validate
 
 OUTPUT = Path(os.environ.get("AUDIO_PRESENTER_OUTPUT", "output"))
 PORT = 8000
@@ -24,17 +24,19 @@ def default_base() -> str:
     return f"http://{lan_ip()}:{PORT}"
 
 
+def serving(port: int) -> bool:
+    with socket.socket() as s:
+        return s.connect_ex(("127.0.0.1", port)) == 0
+
+
 def doctor() -> None:
-    ffmpeg = shutil.which("ffmpeg")
-    print("ffmpeg:", ffmpeg or "MISSING")
+    print("ffmpeg:", tools.ffmpeg())
     import torch
 
     print("torch:", torch.__version__, "| device:", "cuda" if torch.cuda.is_available() else "cpu")
     # The first call downloads the Kokoro weights from Hugging Face, about 330 MB.
     audio = render.KokoroVoice()("Your podcast setup works.")
     print(f"kokoro: rendered {len(audio) / render.SAMPLE_RATE:.1f} s of speech")
-    if not ffmpeg:
-        raise SystemExit("ffmpeg is missing. Install it and make sure it's on PATH.")
     print("ok")
 
 
@@ -58,7 +60,8 @@ def main() -> None:
     p.add_argument("--delete", action="store_true", help="also remove remote files that no longer exist locally")
     p.add_argument("--dry-run", action="store_true")
     sub.add_parser("recompress", help="re-encode every episode's MP3s at the current bitrate, then run feed")
-    sub.add_parser("serve", help=f"rebuild the feed and serve output/ on port {PORT}")
+    p = sub.add_parser("serve", help=f"rebuild the feed and serve output/ on port {PORT}")
+    p.add_argument("--open", action="store_true", help="open the subscribe page in this computer's browser")
     sub.add_parser("doctor", help="check ffmpeg and the TTS model, then render a test sentence")
     args = parser.parse_args()
 
@@ -75,7 +78,9 @@ def main() -> None:
         chapters = package.run(args.episode)
         print(f"{presentation['audio']['durationMs'] / 60000:.1f} min, {len(chapters)} chapters -> {args.episode / 'audio.mp3'}")
     elif args.command == "feed":
-        print(feed.run(OUTPUT, args.base_url or default_base(), args.title))
+        base = args.base_url or default_base()
+        print(feed.run(OUTPUT, base, args.title))
+        subscribe.write(OUTPUT, base)
     elif args.command == "publish":
         publish.run(OUTPUT, args.bucket, args.delete, args.dry_run)
     elif args.command == "recompress":
@@ -85,6 +90,14 @@ def main() -> None:
     elif args.command == "serve":
         base = default_base()
         feed.run(OUTPUT, base)
-        print(f"Subscribe in AntennaPod to: {base}/podcast.xml  (Ctrl+C to stop)")
+        subscribe.write(OUTPUT, base)
+        print(f"Subscribe page: {base}/")
+        print(f"Feed: {base}/podcast.xml")
+        if args.open:
+            webbrowser.open(f"http://localhost:{PORT}/")
+        if serving(PORT):
+            print(f"Already serving on port {PORT}.")
+            return
+        print("Serving. Ctrl+C to stop.", flush=True)
         handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=str(OUTPUT))
         http.server.ThreadingHTTPServer(("0.0.0.0", PORT), handler).serve_forever()

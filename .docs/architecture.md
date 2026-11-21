@@ -46,7 +46,7 @@ Checks `script.json` against [the schema](../src/audio_presenter/schemas/script.
 
 - `feed` writes `podcast.xml` and each episode's `chapters.json`, with absolute URLs for the LAN address or `--base-url`.
 - Each item carries a `<category>` per area from `extract --category`, and a `<pagecast:source>` from `extract --source`. Items sort by publish date.
-- `serve` rebuilds the feed and serves `output/` on port 8000. Python's file server doesn't support HTTP range requests, so download episodes in AntennaPod rather than streaming them.
+- `serve` rebuilds the feed, writes the subscribe page `index.html`, and serves `output/` on port 8000. The page carries a QR code of its own URL, the APK link, and a `pagecast://add?feed=<url>` button the app handles. If the port is taken, `serve` assumes it's already running and exits. Python's file server doesn't support HTTP range requests, so download episodes in AntennaPod rather than streaming them.
 - `publish` uploads `podcast.xml`, `cover.jpg`, and `episodes/` to the `pagecast` Cloudflare R2 bucket with rclone. It needs `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, and `R2_ENDPOINT`. `--delete` also removes remote files that are gone locally.
 - `recompress` re-encodes existing episodes to the current MP3 settings (64 kbps, 24 kHz mono) and re-embeds their chapters.
 - **Default feed.** Narrated Anthropic articles live at `https://pagecast.taibo.ca/podcast.xml`, served from R2 with no git copy of the audio. Pagecast adds it to the listener's sources on first run, like any feed they added, and Settings → Sources removes it.
@@ -57,7 +57,7 @@ Checks `script.json` against [the schema](../src/audio_presenter/schemas/script.
 | --- | --- |
 | Language | Python 3.12 with uv. Kokoro doesn't support 3.13 yet. |
 | TTS | Kokoro-82M, voice `af_heart`, on CUDA. A 34-minute article renders in under a minute. |
-| Audio | ffmpeg |
+| Audio | ffmpeg, from PATH or the build bundled in `imageio-ffmpeg` |
 | ID3 chapters | mutagen |
 | Narration | Claude Code skill |
 

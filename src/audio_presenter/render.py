@@ -8,6 +8,8 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
+from . import tools
+
 SAMPLE_RATE = 24000
 MP3_BITRATE = "64k"
 PAUSE_AFTER = {"title": 1.0, "heading": 0.8}
@@ -64,7 +66,7 @@ def encode(samples: np.ndarray, dest: Path) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         wav = Path(tmp) / "audio.wav"
         sf.write(wav, samples, SAMPLE_RATE)
-        subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(wav), "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
+        subprocess.run([tools.ffmpeg(), "-y", "-loglevel", "error", "-i", str(wav), "-af", "loudnorm=I=-16:TP=-1.5:LRA=11",
                         "-ar", str(SAMPLE_RATE), "-ac", "1", "-b:a", MP3_BITRATE, str(dest)], check=True)
 
 

@@ -8,7 +8,7 @@ flowchart TD
     M[Push to main] --> T2[python + android jobs]
     T2 -->|both pass| C{major.minor changed<br/>since the last v* tag?}
     C -->|no| D[Done]
-    C -->|yes| B[Build the signed bundle] --> P[Upload to Play internal testing] --> G[Tag vX.Y.Z + GitHub release]
+    C -->|yes| B[Build the signed bundle and APK] --> P[Upload to Play internal testing] --> G[Tag vX.Y.Z + GitHub release]
 ```
 
 ## Jobs
@@ -26,7 +26,7 @@ Jobs run on GitHub-hosted `ubuntu-latest` runners. Workflows from outside contri
 The version lives in [android/version.properties](../android/version.properties). Gradle derives `versionCode` from it as `major × 1,000,000 + minor × 1,000 + patch`, so the code always increases with the version.
 
 - **Patch bump** (0.2.0 → 0.2.1): merges, but doesn't release.
-- **Minor or major bump** (0.2.1 → 0.3.0): releases on merge to main. The release job builds a bundle signed with the upload key and uploads it to the internal track. Then it tags `vX.Y.Z` and attaches the bundle to a GitHub release.
+- **Minor or major bump** (0.2.1 → 0.3.0): releases on merge to main. The release job builds a bundle signed with the upload key and uploads it to the internal track. Then it tags `vX.Y.Z` and attaches the bundle and `pagecast.apk` to a GitHub release. The APK keeps one name, so `releases/latest/download/pagecast.apk` always serves the newest. It's signed with the upload key, while Play re-signs with its own, so switching between the APK and Play needs an uninstall first.
 
 [scripts/release_check.py](../scripts/release_check.py) makes the call by comparing against the newest `v*` tag. A version lower than the last tag fails the job.
 
