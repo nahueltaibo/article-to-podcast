@@ -2,8 +2,8 @@ package com.nahueltaibo.pagecast.ui
 
 import java.time.LocalDate
 
-/** How far back the date chips reach. Dates have no time of day, so 1d also keeps yesterday's episodes. */
-enum class Window(val label: String, val days: Long) { DAY("1d", 1), WEEK("1w", 7), MONTH("1m", 30) }
+/** How far back the date filter reaches. Dates have no time of day, so the last day also keeps yesterday's episodes. */
+enum class Window(val label: String, val days: Long) { DAY("Last day", 1), WEEK("Last week", 7), MONTH("Last month", 30) }
 
 enum class Sort(val label: String) { NEWEST("Newest"), OLDEST("Oldest"), TITLE("Title") }
 

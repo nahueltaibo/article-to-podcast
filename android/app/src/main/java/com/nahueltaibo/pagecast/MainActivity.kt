@@ -8,10 +8,9 @@ import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +24,8 @@ import androidx.media3.session.SessionToken
 import com.nahueltaibo.pagecast.playback.PlaybackService
 import com.nahueltaibo.pagecast.ui.LibraryScreen
 import com.nahueltaibo.pagecast.ui.LibraryViewModel
+import com.nahueltaibo.pagecast.ui.PagecastTheme
+import com.nahueltaibo.pagecast.ui.isDark
 import com.nahueltaibo.pagecast.ui.PlayerScreen
 import com.nahueltaibo.pagecast.ui.SettingsScreen
 import com.nahueltaibo.pagecast.data.Settings
@@ -34,13 +35,17 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // The app is always dark, so system bar icons stay light even when the phone uses a light theme.
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(Color.TRANSPARENT),
-        )
+        val settings = Settings(applicationContext)
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
+            var theme by remember { mutableStateOf(settings.theme) }
+            val dark = isDark(theme)
+            // System bar icons must contrast with the app's theme, which can differ from the phone's.
+            LaunchedEffect(dark) {
+                val style = if (dark) SystemBarStyle.dark(Color.TRANSPARENT)
+                else SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+                enableEdgeToEdge(statusBarStyle = style, navigationBarStyle = style)
+            }
+            PagecastTheme(dark) {
                 val state by viewModel.state.collectAsStateWithLifecycle()
                 val controller = rememberMediaController()
                 var openId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -48,10 +53,18 @@ class MainActivity : ComponentActivity() {
                 val open = openId?.let { id -> state.rows.firstOrNull { it.id == id }?.local }
 
                 if (settingsOpen) {
-                    SettingsScreen(settings = remember { Settings(applicationContext) }, onClose = {
-                        settingsOpen = false
-                        viewModel.refresh()
-                    })
+                    SettingsScreen(
+                        settings = settings,
+                        theme = theme,
+                        onTheme = {
+                            settings.theme = it
+                            theme = it
+                        },
+                        onClose = {
+                            settingsOpen = false
+                            viewModel.refresh()
+                        },
+                    )
                 } else if (open != null && controller != null) {
                     PlayerScreen(
                         episode = open,
@@ -63,6 +76,10 @@ class MainActivity : ComponentActivity() {
                     LibraryScreen(
                         state = state,
                         onAddFeed = viewModel::addFeed,
+                        onUseRecommended = {
+                            settings.recommendedFeed = true
+                            viewModel.refresh()
+                        },
                         onRefresh = viewModel::refresh,
                         onDownload = viewModel::download,
                         onDelete = viewModel::delete,
